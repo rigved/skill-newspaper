@@ -10,8 +10,8 @@ To get this done, the following Python modules are used:
 * [nltk](https://github.com/nltk/nltk)
 
 ## Examples
-* "Read aloud https://insights.ubuntu.com/2016/07/07/mycroft-the-open-source-answer-to-natural-language"
-* "Read aloud summary of https://insights.ubuntu.com/2016/07/07/mycroft-the-open-source-answer-to-natural-language-platforms/"
+* "Read full text https://insights.ubuntu.com/2016/07/07/mycroft-the-open-source-answer-to-natural-language"
+* "Read summary https://insights.ubuntu.com/2016/07/07/mycroft-the-open-source-answer-to-natural-language-platforms/"
 
 ## Credits
 * [rigved](https://github.com/rigved)
