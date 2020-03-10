@@ -1,7 +1,0 @@
-{
-  "utterance": "Read full text",
-  "intent_type": "ReadFullTextIntent",
-  "intent": {
-    "ReadFullTextKeyword": "read full text"
-  }
-}

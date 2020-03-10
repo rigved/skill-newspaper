@@ -1,7 +1,0 @@
-{
-  "utterance": "Read summary",
-  "intent_type": "ReadSummaryIntent",
-  "intent": {
-    "ReadSummaryKeyword": "read summary"
-  }
-}
