@@ -14,21 +14,25 @@ class WebpageSummarizer(MycroftSkill):
     def handle_summarizer_webpage(self, message):
         self.speak_dialog('summarizer.webpage')
 
-    def get_summary(self, url):
+    def summarize_webpage(self, url):
         """
         Takes a website URL and returns the URL title and a summary of the website content.
         :param url: Website URL.
         :return: Website title and summarized website text.
         """
+        title = summarized_text = ''
         try:
             self.browser.open(url)
             page = self.browser.get_current_page()
             website_text = ' '.join(map(lambda p: p.text, page.find_all('p')))
-            summarized_text = summarize(website_text)
-            self.browser.close()
-            return page.title.text, summarized_text
+            title = page.title.text.strip()
+            summarized_text = summarize(website_text).strip()
         except Exception as e:
             pass
+        finally:
+            self.browser.close()
+
+        return title, summarized_text
 
 
 def create_skill():
