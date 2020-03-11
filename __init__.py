@@ -1,5 +1,7 @@
 from mycroft import MycroftSkill, intent_file_handler
 
+import os.path
+import sqlite3
 import mechanicalsoup
 from gensim.summarization.summarizer import summarize
 
@@ -9,6 +11,12 @@ class WebpageSummarizer(MycroftSkill):
         MycroftSkill.__init__(self)
         self.browser = mechanicalsoup.StatefulBrowser(
             user_agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:73.0) Gecko/20100101 Firefox/73.0')
+        if not os.path.isfile('webpage_summary.db'):
+            conn = sqlite3.connect('webpage_summary.db')
+            with conn:
+                c = conn.cursor()
+                c.execute('CREATE TABLE webpage_summary (url text, title text, summary text);')
+                conn.commit()
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
