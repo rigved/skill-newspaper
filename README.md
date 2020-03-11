@@ -11,7 +11,7 @@ There is a large amount of online news and other interesting articles that we co
 * "Read summaries"
 
 ## Credits
-Rigved Rakshit
+@rigved
 
 ## Category
 **Productivity**
