@@ -19,6 +19,7 @@ class WebpageSummarizer(MycroftSkill):
                 c = conn.cursor()
                 c.execute('CREATE TABLE ? (url text, title text, summary text);', (self.table,))
                 conn.commit()
+                self.log.debug('Created database to store titles and summaries of URLs')
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
@@ -37,8 +38,9 @@ class WebpageSummarizer(MycroftSkill):
             website_text = ' '.join(map(lambda p: p.text, page.find_all('p')))
             title = page.title.text.strip()
             summarized_text = summarize(website_text).strip()
+            self.log.debug('\n\nURL: {}\nTitle: {}\nSummary: {}\n\n'.format(url, title, summarized_text))
         except Exception as e:
-            pass
+            self.log.exception(e)
         finally:
             self.browser.close()
 
