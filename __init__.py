@@ -11,11 +11,13 @@ class WebpageSummarizer(MycroftSkill):
         MycroftSkill.__init__(self)
         self.browser = mechanicalsoup.StatefulBrowser(
             user_agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:73.0) Gecko/20100101 Firefox/73.0')
-        if not os.path.isfile('webpage_summary.db'):
-            conn = sqlite3.connect('webpage_summary.db')
+        self.db = 'webpage_summary.db'
+        self.table = 'webpage_summary'
+        if not os.path.isfile(self.db):
+            conn = sqlite3.connect(self.db)
             with conn:
                 c = conn.cursor()
-                c.execute('CREATE TABLE webpage_summary (url text, title text, summary text);')
+                c.execute('CREATE TABLE ? (url text, title text, summary text);', (self.table,))
                 conn.commit()
 
     @intent_file_handler('summarizer.webpage.intent')
