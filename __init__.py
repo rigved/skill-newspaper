@@ -41,8 +41,8 @@ class WebpageSummarizer(MycroftSkill):
             c.execute('SELECT * FROM ? WHERE summary IS NOT ?;', (self.table, None))
             data_to_speak = c.fetchall()
             if len(data_to_speak) > 0:
+                self.speak_dialog('summarizer.webpage')
                 for row in data_to_speak:
-                    self.speak_dialog('summarizer.webpage')
                     self.speak('Web page title is {}'.format(row[1]))
                     self.speak('And the summary is as follows. {}'.format(row[2]))
                     c.execute('DELETE from ? where url = ?;', (self.table, row[0]))
