@@ -42,13 +42,21 @@ class WebpageSummarizer(MycroftSkill):
             data_to_speak = c.fetchall()
             if len(data_to_speak) > 0:
                 self.speak_dialog('summarizer.webpage')
+                i = 0
                 for row in data_to_speak:
-                    self.speak('Web page title is {}'.format(row[1]))
+                    self.enclosure.mouth_text(row[1])
+                    if i == 0:
+                        self.speak('The first web page title is {}'.format(row[1]))
+                        i += 1
+                    else:
+                        self.speak('The next web page title is {}'.format(row[1]))
                     self.speak('And the summary is as follows. {}'.format(row[2]))
                     c.execute('DELETE from ? where url = ?;', (self.table, row[0]))
                     conn.commit()
             else:
+                self.enclosure.mouth_text('No more summaries available.')
                 self.speak('No more summaries available.')
+        self.enclosure.reset()
 
     def summarize_webpage(self, url):
         """
