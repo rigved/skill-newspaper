@@ -53,9 +53,8 @@ class WebpageSummarizer(MycroftSkill):
                     self.speak('And the summary is as follows. {}'.format(row[2]))
                     c.execute('DELETE from ? where url = ?;', (self.table, row[0]))
                     conn.commit()
-            else:
-                self.enclosure.mouth_text('No more summaries available.')
-                self.speak('No more summaries available.')
+        self.enclosure.mouth_text('No more summaries available.')
+        self.speak('There are no more summaries available.')
         self.enclosure.reset()
 
     def summarize_webpage(self, url):
