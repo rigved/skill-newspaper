@@ -9,8 +9,8 @@ There is a large amount of online news and other interesting articles that we co
 ## Examples
 * "Read summary"
 * "Read summaries"
-* "Read web page"
-* "Read web pages"
+* "Read web page summary"
+* "Read web page summaries"
 
 ## Credits
 [rigved](https://github.com/rigved/)
