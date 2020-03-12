@@ -21,7 +21,15 @@ class WebpageSummarizer(MycroftSkill):
                 self.log.debug('Created database to store titles and summaries of URLs.')
 
     def initialize(self):
+        self.settings_change_callback = self.on_settings_changed
+        self.on_settings_changed()
         self.summarize_webpages()
+
+    def on_settings_changed(self):
+        self.summarization_ratio = self.settings.get('summarization_ratio', 0.2)
+        if self.summarization_ratio <= 0.0 or self.summarization_ratio >= 1.0:
+            self.settings['summarization_ratio'] = self.summarization_ratio = 0.2
+            self.log.warning('Invalid summarization ratio was set. This has been reset to the default value.')
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
@@ -54,7 +62,7 @@ class WebpageSummarizer(MycroftSkill):
             page = self.browser.get_current_page()
             website_text = ' '.join(map(lambda p: p.text, page.find_all('p')))
             title = page.title.text.strip()
-            summarized_text = summarize(website_text).strip()
+            summarized_text = summarize(website_text, ratio=self.summarization_ratio).strip()
             self.log.debug('\n\nURL: {}\nTitle: {}\nSummary: {}\n\n'.format(url, title, summarized_text))
         except Exception as e:
             self.log.exception('Couldn\'t parse URL: {}.'.format(url))
