@@ -1,10 +1,15 @@
 
 skillMetadata:
   sections:
-    - name: Options
+    - name: Summarization micro-service
       fields:
-        - name: summarization_ratio
-          type: number
-          label: Summarization Ratio
-          value: "0.2"
-          placeholder: Fraction (percentage) of the original text that should be part of the summary. Enter a number between 0.0 and 1.0, exclusive of these two numbers. This setting will be applied to new web pages only.
+        - name: api_token
+          type: text
+          label: API Token
+          placeholder: Use this API token to allow other applications to send web page URLs to the Summarization micro-service. If you want to reset this token, simply blank out the contents of this field, save, and re-visit this page after a few minutes; a new token will have been auto-generated.
+          value:
+        - name: root_ca
+          type: text
+          label: Root CA Certificate
+          placeholder: Use this Root CA Certificate to allow other applications to connect to the Summarization micro-service over encrypted HTTPS connections. Copy the entire certificate into the remote application, including the "-----BEGIN CERTIFICATE-----" and the "-----END CERTIFICATE-----" parts. If you want to reset this certificate, simply blank out the contents of this field, save, and re-visit this page after a few minutes; a new certificate will have been auto-generated.
+          value:

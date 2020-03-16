@@ -7,14 +7,23 @@
 dependencies:
   # Pip dependencies on PyPI
   python:
+    - requests
+    - lxml
+    - beautifulsoup4
     - mechanicalsoup
     - gensim
+    - django
+    - argon2-cffi
+    - djangorestframework
+    - daphne
+    - Twisted[tls,http2]
+    - whitenoise[brotli]
 #
 #   # Install packages with the system package manager
 #   # This searches for the provided executable and uses the package names
-#   system:
-#     # For simple packages, this is all that is necessary
-#     all: pianobar piano-dev
+  system:
+    # For simple packages, this is all that is necessary
+    all: expect
 #
 #     # If the package has a certain name on a different platform:
 #     pkcon: pianobar libpiano-dev  # For the mycroft platform
