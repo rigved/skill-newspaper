@@ -1,4 +1,4 @@
-title: webpage-summarizer-skill
+title: mycroft-ai-webpage-summarizer-skill
 description: Mycroft AI skill to read out summaries of web pages
 google_analytics:
 show_downloads: true
