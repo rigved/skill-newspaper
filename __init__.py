@@ -10,9 +10,15 @@ class WebpageSummarizer(MycroftSkill):
     """
     def __init__(self):
         MycroftSkill.__init__(self)
+        self.folder = os.path.dirname(os.path.realpath(__file__))
         # Setup Django project and app
-        if not os.path.isfile('apiv1/db.sqlite3'):
-            subprocess.run(['./scripts/create_database_and_superuser.sh'])
+        if not os.path.isfile(os.path.join(self.folder, 'apiv1/db.sqlite3')):
+            subprocess.run([
+                os.path.join(
+                    self.folder,
+                    'scripts/create_database_and_superuser.sh'
+                )
+            ])
 
     def initialize(self):
         """
@@ -28,23 +34,34 @@ class WebpageSummarizer(MycroftSkill):
         port = 65443
         self.api_endpoint = 'https://localhost:{}/v1/webpages/'.format(port)
         self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
-        key = 'secrets/mycroftai.shieldofachilles.in.key'
-        cert = 'secrets/mycroftai.shieldofachilles.in.crt'
+        key = os.path.join(
+            self.folder,
+            'apiv1/secrets/mycroftai.shieldofachilles.in.key'
+        )
+        cert = os.path.join(
+            self.folder,
+            'apiv1/secrets/mycroftai.shieldofachilles.in.crt'
+        )
         ssl_config = 'ssl:{}:privateKey={}:certKey={}'.format(
             port,
             key,
-            cert)
+            cert
+        )
         if os.path.isfile(key) and os.path.isfile(cert):
             try:
                 # Start the Summarization micro-service in a Daphne ASGI
                 # application server.
                 self.daphne = subprocess.Popen([
-                    'daphne',
-                    '-e',
-                    ssl_config,
-                    'apiv1.asgi:application'
-                ],
-                cwd='apiv1')
+                        'daphne',
+                        '-e',
+                        ssl_config,
+                        'apiv1.asgi:application'
+                    ],
+                    cwd=os.path.join(
+                        self.folder,
+                        'apiv1'
+                    )
+                )
                 self.log.info('Daphne started successfully in the background.')
             except Exception as e:
                 self.speak('''Error! The summarization micro-service failed to
@@ -66,7 +83,10 @@ class WebpageSummarizer(MycroftSkill):
         self.api_token = self.settings.get('api_token', '')
         if self.api_token == '':
             self.settings['api_token'] = self.api_token = subprocess.run([
-                './scripts/update_password_and_token.sh',
+                os.path.join(
+                    self.folder,
+                    'scripts/update_password_and_token.sh'
+                ),
                 '|',
                 'grep',
                 'Generated token ',
@@ -82,8 +102,15 @@ class WebpageSummarizer(MycroftSkill):
         # the Daphne web application server.
         self.root_ca = self.settings.get('root_ca', '')
         if self.root_ca == '':
-            root_ca_cert = 'apiv1/secrets/rootCA.crt'
-            subprocess.run(['./scripts/update_certificates.sh'])
+            root_ca_cert = os.path.join(
+                self.folder,
+                'apiv1/secrets/rootCA.crt'
+            )
+            subprocess.run([os.path.join(
+                    self.folder,
+                    'scripts/update_certificates.sh'
+                )
+            ])
             if os.path.isfile(root_ca_cert):
                 with open(root_ca_cert, 'r') as f:
                     self.setting['root_ca'] = self.root_ca = f.read.strip()
