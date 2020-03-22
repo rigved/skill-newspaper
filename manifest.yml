@@ -7,6 +7,8 @@
 dependencies:
   # Pip dependencies on PyPI
   python:
+    - requests
+    - beautifulsoup4
     - cython
     - lxml
     - mechanicalsoup
@@ -22,7 +24,7 @@ dependencies:
 #   # This searches for the provided executable and uses the package names
   system:
     # For simple packages, this is all that is necessary
-    all: expect libxml2-dev libxslt1-dev python3-requests python3-bs4
+    all: expect gcc gfortran python-dev libopenblas-dev liblapack-dev cython libxml2-dev libxslt1-dev
 #
 #     # If the package has a certain name on a different platform:
 #     pkcon: pianobar libpiano-dev  # For the mycroft platform
