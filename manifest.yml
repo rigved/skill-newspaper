@@ -8,12 +8,8 @@ dependencies:
   # Pip dependencies on PyPI
   python:
     - requests
-    - beautifulsoup4
-    - cython
     - lxml
     - mechanicalsoup
-    - numpy
-    - scipy
     - gensim
     - django
     - argon2-cffi
