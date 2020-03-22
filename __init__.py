@@ -185,14 +185,16 @@ class WebpageSummarizer(MycroftSkill):
         out loud earlier. We need to do this because Mycroft may have been
         interrupted while it was processing the queue.
         """
-        self.delete_data_after_reading()
+        if hasattr(self, 'delete_data_after_reading'):
+            self.delete_data_after_reading()
 
     def shutdown(self):
         """
         Stop the Summarization micro-service cleanly before shutting down. This
         allows any pending transactions to be completed.
         """
-        self.daphne.terminate()
+        if hasattr(self, 'daphne'):
+            self.daphne.terminate()
 
     def delete_data_after_reading(self):
         """
