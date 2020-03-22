@@ -192,7 +192,7 @@ class WebpageSummarizer(MycroftSkill):
         """
         self.daphne.terminate()
 
-    def delete_data_after_reading():
+    def delete_data_after_reading(self):
         """
         Convenience function to delete summaries which have already been read
         out aloud. We do not want to re-read any summaries that were read
