@@ -7,7 +7,6 @@
 dependencies:
   # Pip dependencies on PyPI
   python:
-    - requests
     - lxml
     - mechanicalsoup
     - gensim
