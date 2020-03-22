@@ -18,8 +18,8 @@ dependencies:
     - django
     - argon2-cffi
     - djangorestframework
-    - daphne
     - Twisted[tls,http2]
+    - daphne
     - whitenoise[brotli]
 #
 #   # Install packages with the system package manager
