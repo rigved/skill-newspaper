@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}
 # Create the required folders and files
-mkdir -p ${DIR}/../apiv1/secrets
+mkdir -p ../apiv1/secrets
 touch ~/.rnd
 # Generate the Root CA Key
 openssl genrsa -out ../apiv1/secrets/rootCA.key 4096
