@@ -12,6 +12,8 @@ dependencies:
     - cython
     - lxml
     - mechanicalsoup
+    - numpy
+    - scipy
     - gensim
     - django
     - argon2-cffi
