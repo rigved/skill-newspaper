@@ -21,12 +21,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-if os.path.isfile('secrets/secret.key'):
-    with open('secrets/secret.key', 'r') as f:
+if os.path.isfile(os.path.join(BASE_DIR, 'secrets/secret.key')):
+    with open(os.path.join(BASE_DIR, 'secrets/secret.key'), 'r') as f:
         SECRET_KEY = f.read().strip()
 else:
     SECRET_KEY = get_random_secret_key()
-    with open('secrets/secret.key', 'w') as f:
+    with open(os.path.join(BASE_DIR, 'secrets/secret.key'), 'w') as f:
         f.write(SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
