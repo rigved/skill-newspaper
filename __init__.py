@@ -1,4 +1,5 @@
 from mycroft import MycroftSkill, intent_file_handler
+from mycroft.skills.settings import save_settings
 import os
 import requests
 import subprocess
@@ -115,6 +116,7 @@ class WebpageSummarizer(MycroftSkill):
                 with open(root_ca_cert, 'r') as f:
                     self.setting['root_ca'] = self.root_ca = f.read().strip()
             self.log.info('New certificates generated successfully.')
+        save_settings(self.root_dir, self.settings)
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
