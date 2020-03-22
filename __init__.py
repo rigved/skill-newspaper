@@ -113,7 +113,7 @@ class WebpageSummarizer(MycroftSkill):
             ])
             if os.path.isfile(root_ca_cert):
                 with open(root_ca_cert, 'r') as f:
-                    self.setting['root_ca'] = self.root_ca = f.read.strip()
+                    self.setting['root_ca'] = self.root_ca = f.read().strip()
             self.log.info('New certificates generated successfully.')
 
     @intent_file_handler('summarizer.webpage.intent')
