@@ -1,6 +1,7 @@
 #!/bin/bash
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd ${DIR}
 # Create the required folders and files
 mkdir -p ${DIR}/../apiv1/secrets
 touch ~/.rnd
