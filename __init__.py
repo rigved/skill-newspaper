@@ -114,7 +114,7 @@ class WebpageSummarizer(MycroftSkill):
             ])
             if os.path.isfile(root_ca_cert):
                 with open(root_ca_cert, 'r') as f:
-                    self.setting['root_ca'] = self.root_ca = f.read().strip()
+                    self.settings['root_ca'] = self.root_ca = f.read().strip()
             self.log.info('New certificates generated successfully.')
         save_settings(self.root_dir, self.settings)
 
