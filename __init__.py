@@ -97,7 +97,7 @@ class WebpageSummarizer(MycroftSkill):
                 '|',
                 'awk',
                 '{print $3}'],
-                capture_output=True).stdout.split()[21].decode('UTF-8')
+                capture_output=True).stdout.strip().decode('UTF-8')
             self.log.info('New API token generated successfully.')
         # Generate self-signed certificates to connect with the Summarization
         # micro-service over an encrypted TLS connection using HTTP/2. The
