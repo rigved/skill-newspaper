@@ -32,7 +32,7 @@ class WebpageSummarizer(MycroftSkill):
         # delete those entries from the summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
         # Settings to use for the Daphne ASGI application server.
-        self.api_endpoint = 'https://localhost:{}/v1/webpages/'.format(port)
+        self.api_endpoint = 'https://localhost:65443/v1/webpages/'
         self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
         try:
             # Start the Summarization micro-service in a Daphne ASGI
