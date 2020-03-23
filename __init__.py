@@ -53,7 +53,7 @@ class WebpageSummarizer(MycroftSkill):
                 # Start the Summarization micro-service in a Daphne ASGI
                 # application server.
                 self.daphne = subprocess.Popen([
-                        'source',
+                        '.',
                         '/opt/venvs/mycroft-core/bin/activate',
                         '&&',
                         'daphne',
