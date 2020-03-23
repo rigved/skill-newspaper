@@ -32,49 +32,25 @@ class WebpageSummarizer(MycroftSkill):
         # delete those entries from the summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
         # Settings to use for the Daphne ASGI application server.
-        port = 65443
         self.api_endpoint = 'https://localhost:{}/v1/webpages/'.format(port)
         self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
-        key = os.path.join(
-            self.folder,
-            'apiv1/secrets/mycroftai.shieldofachilles.in.key'
-        )
-        cert = os.path.join(
-            self.folder,
-            'apiv1/secrets/mycroftai.shieldofachilles.in.crt'
-        )
-        ssl_config = 'ssl:{}:privateKey={}:certKey={}'.format(
-            port,
-            key,
-            cert
-        )
-        if os.path.isfile(key) and os.path.isfile(cert):
-            try:
-                # Start the Summarization micro-service in a Daphne ASGI
-                # application server.
-                self.daphne = subprocess.Popen([
-                        '.',
-                        '/opt/venvs/mycroft-core/bin/activate',
-                        '&&',
-                        'daphne',
-                        '-e',
-                        ssl_config,
-                        'apiv1.asgi:application'
-                    ],
-                    cwd=os.path.join(
+        try:
+            # Start the Summarization micro-service in a Daphne ASGI
+            # application server.
+            self.daphne = subprocess.Popen([
+                    os.path.join(
                         self.folder,
-                        'apiv1'
+                        'scripts/start_daphne.sh'
                     )
-                )
-                self.log.info('Daphne started successfully in the background.')
-            except Exception as e:
-                self.speak('''Error! The summarization micro-service failed to
-                           start.''')
-                self.log.exception('Daphne failed to start.')
-        else:
-            self.speak('''Error! Required key and certificate files are
-                       missing.''')
-            self.log.error('Required SSL key and certificate files are missing.')
+                ]
+            )
+            self.log.info('Daphne started successfully in the background.')
+        except Exception as e:
+            self.speak('''Error! The summarization micro-service failed to
+                       start.''')
+            self.log.exception('Daphne failed to start.')
+        self.speak('''The Mycroft AI Webpage Summarization skill
+                   has been successfully installed and setup!''')
 
     def on_settings_changed(self):
         """
