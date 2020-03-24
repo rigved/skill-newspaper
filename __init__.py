@@ -174,6 +174,10 @@ class WebpageSummarizer(MycroftSkill):
         """
         if hasattr(self, 'daphne'):
             self.daphne.terminate()
+            subprocess.run([
+                'killall',
+                'daphne'
+            ])
 
     def delete_data_after_reading(self):
         """
