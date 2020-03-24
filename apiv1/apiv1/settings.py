@@ -32,9 +32,7 @@ else:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['mycroftai.shieldofachilles.in']
-if DEBUG:
-    ALLOWED_HOSTS.extend(['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = ['localhost', 'mycroftai.shieldofachilles.in']
 
 
 # Application definition

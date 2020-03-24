@@ -10,45 +10,33 @@ class WebpageSummarizer(MycroftSkill):
     Skill to read out summaries of the provided web pages.
     """
     def __init__(self):
+        """
+        Set all the required configuration for the Summarization
+        micro-service.
+        """
         MycroftSkill.__init__(self)
-        self.folder = os.path.dirname(os.path.realpath(__file__))
         # Setup Django project and app
-        if not os.path.isfile(os.path.join(self.folder, 'apiv1/db.sqlite3')):
+        if not os.path.isfile(os.path.join(self.root_dir, 'apiv1/db.sqlite3')):
             subprocess.run([
                 os.path.join(
-                    self.folder,
+                    self.root_dir,
                     'scripts/create_database_and_superuser.sh'
                 )
             ])
+        # Configuration for the Summarization micro-service
+        self.api_endpoint = 'https://localhost:65443/v1/webpages/'
+        self.headers = {}
+        # Keep track of which web pages have been summarized out loud and
+        # delete those entries from the Summarization micro-service queue.
+        self.webpage_data_to_delete_after_reading = set()
 
     def initialize(self):
         """
-        Set all the required configuration and start the Summarization
-        micro-service.
+        Handle changes in settings and inform the user once the skill has been
+        setup and installed for the first time.
         """
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
-        # Keep track of which web pages have been summarized out loud and
-        # delete those entries from the summarization micro-service queue.
-        self.webpage_data_to_delete_after_reading = set()
-        # Settings to use for the Daphne ASGI application server.
-        self.api_endpoint = 'https://localhost:65443/v1/webpages/'
-        self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
-        try:
-            # Start the Summarization micro-service in a Daphne ASGI
-            # application server.
-            self.daphne = subprocess.Popen([
-                    os.path.join(
-                        self.folder,
-                        'scripts/start_daphne.sh'
-                    )
-                ]
-            )
-            self.log.info('Daphne started successfully in the background.')
-        except Exception as e:
-            self.speak('''Error! The summarization micro-service failed to
-                       start.''')
-            self.log.exception('Daphne failed to start.')
         self.speak('''The Mycroft AI Webpage Summarization skill
                    has been successfully installed and setup!''')
 
@@ -56,15 +44,16 @@ class WebpageSummarizer(MycroftSkill):
         """
         Sets the Django superuser password and API token. Also, creates the
         self-signed SSL certificates for use by the Daphne ASGI application
-        server.
+        server. Start or restart the Daphne ASGI application server using
+        the new certificates.
         """
-        # Generate an API token to authenticate with the Summarization
+        # Load or generate an API token to authenticate with the Summarization
         # micro-service.
         self.api_token = self.settings.get('api_token', '')
         if self.api_token == '':
             self.settings['api_token'] = self.api_token = subprocess.run([
                 os.path.join(
-                    self.folder,
+                    self.root_dir,
                     'scripts/update_password_and_token.sh'
                 ),
                 '|',
@@ -74,20 +63,23 @@ class WebpageSummarizer(MycroftSkill):
                 'awk',
                 '{print $3}'],
                 capture_output=True).stdout.strip().decode('UTF-8')
+            # Use this new API token for all future communication with
+            # the Summarization micro-service.
+            self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
             self.log.info('New API token generated successfully.')
         # Generate self-signed certificates to connect with the Summarization
         # micro-service over an encrypted TLS connection using HTTP/2. The
         # self-signed Root CA certificate is used by remote applications to
         # verify the authenticity of the self-signed certificate used by
-        # the Daphne web application server.
+        # the Summarization micro-service application server.
         self.root_ca = self.settings.get('root_ca', '')
         if self.root_ca == '':
             root_ca_cert = os.path.join(
-                self.folder,
+                self.root_dir,
                 'apiv1/secrets/rootCA.crt'
             )
             subprocess.run([os.path.join(
-                    self.folder,
+                    self.root_dir,
                     'scripts/update_certificates.sh'
                 )
             ])
@@ -95,6 +87,25 @@ class WebpageSummarizer(MycroftSkill):
                 with open(root_ca_cert, 'r') as f:
                     self.settings['root_ca'] = self.root_ca = f.read().strip()
             self.log.info('New certificates generated successfully.')
+            # Start or restart the Summarization micro-service application server
+            # using the new certificates.
+            try:
+                # Stop the Summarization micro-service in case it is running
+                self.shutdown_daphne()
+                # Start the Summarization micro-service in a Daphne ASGI
+                # application server.
+                self.daphne = subprocess.Popen([
+                    os.path.join(
+                        self.root_dir,
+                        'scripts/start_daphne.sh'
+                    )
+                ]
+                )
+                self.log.info('Daphne started successfully in the background.')
+            except Exception as e:
+                self.speak('''Error! The summarization micro-service failed to
+                           start.''')
+                self.log.exception('Daphne failed to start.')
         save_settings(self.root_dir, self.settings)
 
     @intent_file_handler('summarizer.webpage.intent')
@@ -172,12 +183,7 @@ class WebpageSummarizer(MycroftSkill):
         Stop the Summarization micro-service cleanly before shutting down. This
         allows any pending transactions to be completed.
         """
-        if hasattr(self, 'daphne'):
-            self.daphne.terminate()
-            subprocess.run([
-                'killall',
-                'daphne'
-            ])
+        self.shutdown_daphne()
 
     def delete_data_after_reading(self):
         """
@@ -198,6 +204,22 @@ class WebpageSummarizer(MycroftSkill):
         except Exception as e:
             self.log.exception('''Error while clearing the queue. Is the
                                summarization micro-service working?''')
+
+    def shutdown_daphne(self):
+        """
+        Cleanly stop the Daphne ASGI application server.
+        """
+        if hasattr(self, 'daphne'):
+            try:
+                self.daphne.terminate()
+                subprocess.run([
+                    'killall',
+                    'daphne'
+                ])
+                self.log.info('Daphne stopped successfully.')
+            except Exception as e:
+                self.log.exception('''Error while shutting down the Daphne micro-service.
+                                    Is the summarization micro-service working?''')
 
 
 def create_skill():
