@@ -229,14 +229,9 @@ class WebpageSummarizer(MycroftSkill):
                 if settings_uploader.api.identity.uuid and settings_uploader.yaml_path.is_file():
                     settings_uploader._load_settings_meta_file()
                     settings_uploader._update_settings_meta()
-                    for i in range(len(settings_uploader.settings_meta['skillMetadata']['sections'])):
-                        if settings_uploader.settings_meta['skillMetadata']['sections'][i]['name'] == 'Summarization micro-service':
-                            for j in range(len(settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'])):
-                                if settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['name'] == 'api_token':
-                                    settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.api_token
-                                elif settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['name'] == 'root_ca':
-                                    settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.root_ca
-                    self.log.debug(settings_uploader.settings_meta)
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.api_token
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][3]['value'] = self.root_ca
+                    self.log.info(settings_uploader.settings_meta)
                     settings_uploader._issue_api_call()
         except Exception as e:
             self.log.exception('''Error while uploading settings
