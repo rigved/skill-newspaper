@@ -272,7 +272,7 @@ class WebpageSummarizer(MycroftSkill):
             try:
                 self.daphne.terminate()
                 subprocess.run([
-                    'killall',
+                    'pkill',
                     'daphne'
                 ])
                 self.log.info('Daphne stopped successfully.')
