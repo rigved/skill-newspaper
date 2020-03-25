@@ -25,3 +25,6 @@ strings /dev/urandom | grep -o '[[:graph:]]' | head -n 128 | tr -d '\n' | head -
 cd ../apiv1/
 source /opt/venvs/mycroft-core/bin/activate
 python manage drf_create_token -r mycroftai | awk '{print $3}' > secrets/api.token
+# Protect secret files
+chmod 300 secrets
+chmod 600 secrets/*
