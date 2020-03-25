@@ -231,8 +231,9 @@ class WebpageSummarizer(MycroftSkill):
                     settings_uploader._update_settings_meta()
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.api_token
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][3]['value'] = self.root_ca
-                    self.log.info(settings_uploader.settings_meta)
                     settings_uploader._issue_api_call()
+                    self.log.info('''New setting values uploaded successfully
+                                    to the Selene Web UI.''')
         except Exception as e:
             self.log.exception('''Error while uploading settings
                                 to the Selene Web UI.''')
