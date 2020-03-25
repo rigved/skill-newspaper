@@ -112,10 +112,7 @@ class WebpageSummarizer(MycroftSkill):
             ])
             if os.path.isfile(root_ca_cert):
                 with open(root_ca_cert, 'r') as f:
-                    root_ca_cert_contents = ''
-                    for line in f.readline().strip():
-                        root_ca_cert_contents += line + '\n'
-                    self.settings['root_ca'] = self.root_ca = root_ca_cert_contents
+                    self.settings['root_ca'] = self.root_ca = f.read().strip()
                     settings_changed = True
             self.log.info('New certificates generated successfully.')
             # Start or restart the Summarization micro-service application server
@@ -239,6 +236,7 @@ class WebpageSummarizer(MycroftSkill):
                                     settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.api_token
                                 elif settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['name'] == 'root_ca':
                                     settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.root_ca
+                    self.log.debug(settings_uploader.settings_meta)
                     settings_uploader._issue_api_call()
         except Exception as e:
             self.log.exception('''Error while uploading settings
