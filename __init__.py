@@ -70,18 +70,21 @@ class WebpageSummarizer(MycroftSkill):
         # micro-service.
         self.api_token = self.settings.get('api_token', '')
         if self.api_token == '':
-            self.settings['api_token'] = self.api_token = subprocess.run([
+            subprocess.run([
                 os.path.join(
                     self.root_dir,
                     'scripts/update_password_and_token.sh'
-                ),
-                '|',
-                'grep',
-                'Generated token ',
-                '|',
-                'awk',
-                '{print $3}'],
-                capture_output=True).stdout.strip().decode('UTF-8')
+                )
+            ]
+            )
+            if os.path.isfile(os.path.join(self.root_dir, 'apiv1/secrets/api.token')):
+                with open(os.path.join(self.root_dir, 'apiv1/secrets/api.token'), 'r') as f:
+                    self.settings['api_token'] = self.api_token = f.read().strip()
+                os.remove(os.path.join(self.root_dir, 'apiv1/secrets/api.token'))
+            else:
+                self.log.error('Unable to generate API token.')
+                self.speak('''Error! Failed to generate an API token
+                            for the Summarization micro-service.''')
             # Use this new API token for all future communication with
             # the Summarization micro-service.
             self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
