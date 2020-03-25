@@ -57,5 +57,5 @@ openssl x509 -req \
     -extfile <(printf "subjectAltName=DNS:mycroftai.shieldofachilles.in,DNS:localhost") \
     -out ${secrets}/mycroftai.shieldofachilles.in.crt
 # Protect secret files
-chmod 300 ${secrets}
+chmod 700 ${secrets}
 chmod 600 ${secrets}/*

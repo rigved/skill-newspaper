@@ -26,5 +26,5 @@ cd ../apiv1/
 source /opt/venvs/mycroft-core/bin/activate
 python manage drf_create_token -r mycroftai | awk '{print $3}' > secrets/api.token
 # Protect secret files
-chmod 300 secrets
+chmod 700 secrets
 chmod 600 secrets/*
