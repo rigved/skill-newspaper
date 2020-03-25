@@ -18,7 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 from mycroft import MycroftSkill, intent_file_handler
-from mycroft.skills.settings import save_settings
+from mycroft.skills.settings import SettingsMetaUploader
+from mycroft.api import DeviceApi, is_paired
 import os
 import requests
 import subprocess
@@ -66,9 +67,13 @@ class WebpageSummarizer(MycroftSkill):
         server. Start or restart the Daphne ASGI application server using
         the new certificates.
         """
-        # Load or generate an API token to authenticate with the Summarization
-        # micro-service.
+        # Load settings
         self.api_token = self.settings.get('api_token', '')
+        self.root_ca = self.settings.get('root_ca', '')
+        # Keep track of whether settings have changed locally
+        settings_changed = False
+        # Generate an API token to authenticate with the Summarization
+        # micro-service in case it is not set or unset.
         if self.api_token == '':
             subprocess.run([
                 os.path.join(
@@ -80,6 +85,7 @@ class WebpageSummarizer(MycroftSkill):
             if os.path.isfile(os.path.join(self.root_dir, 'apiv1/secrets/api.token')):
                 with open(os.path.join(self.root_dir, 'apiv1/secrets/api.token'), 'r') as f:
                     self.settings['api_token'] = self.api_token = f.read().strip()
+                    settings_changed = True
                 os.remove(os.path.join(self.root_dir, 'apiv1/secrets/api.token'))
             else:
                 self.log.error('Unable to generate API token.')
@@ -90,11 +96,10 @@ class WebpageSummarizer(MycroftSkill):
             self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
             self.log.info('New API token generated successfully.')
         # Generate self-signed certificates to connect with the Summarization
-        # micro-service over an encrypted TLS connection using HTTP/2. The
-        # self-signed Root CA certificate is used by remote applications to
-        # verify the authenticity of the self-signed certificate used by
-        # the Summarization micro-service application server.
-        self.root_ca = self.settings.get('root_ca', '')
+        # micro-service over an encrypted TLS connection using HTTP/2 in case
+        # it is not set or unset. The self-signed Root CA certificate is used
+        # by remote applications to verify the authenticity of the self-signed
+        # certificate used by the Summarization micro-service application server.
         if self.root_ca == '':
             root_ca_cert = os.path.join(
                 self.root_dir,
@@ -107,7 +112,11 @@ class WebpageSummarizer(MycroftSkill):
             ])
             if os.path.isfile(root_ca_cert):
                 with open(root_ca_cert, 'r') as f:
-                    self.settings['root_ca'] = self.root_ca = f.read().strip()
+                    root_ca_cert_contents = ''
+                    for line in f.readline().strip():
+                        root_ca_cert_contents += line + '\n'
+                    self.settings['root_ca'] = self.root_ca = root_ca_cert_contents
+                    settings_changed = True
             self.log.info('New certificates generated successfully.')
             # Start or restart the Summarization micro-service application server
             # using the new certificates.
@@ -128,7 +137,9 @@ class WebpageSummarizer(MycroftSkill):
                 self.speak('''Error! The summarization micro-service failed to
                            start.''')
                 self.log.exception('Daphne failed to start.')
-        save_settings(self.root_dir, self.settings)
+        if settings_changed:
+            # Upload new setting values to the Selene Web UI
+            self.upload_settings()
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
@@ -206,6 +217,32 @@ class WebpageSummarizer(MycroftSkill):
         allows any pending transactions to be completed.
         """
         self.shutdown_daphne()
+
+    def upload_settings(self):
+        """
+        Upload new setting values to the Selene Web UI.
+        """
+        try:
+            settings_uploader = SettingsMetaUploader(
+                self.root_dir,
+                self.name
+            )
+            if is_paired():
+                settings_uploader.api = DeviceApi()
+                if settings_uploader.api.identity.uuid and settings_uploader.yaml_path.is_file():
+                    settings_uploader._load_settings_meta_file()
+                    settings_uploader._update_settings_meta()
+                    for i in range(len(settings_uploader.settings_meta['skillMetadata']['sections'])):
+                        if settings_uploader.settings_meta['skillMetadata']['sections'][i]['name'] == 'Summarization micro-service':
+                            for j in range(len(settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'])):
+                                if settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['name'] == 'api_token':
+                                    settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.api_token
+                                elif settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['name'] == 'root_ca':
+                                    settings_uploader.settings_meta['skillMetadata']['sections'][i]['fields'][j]['value'] = self.root_ca
+                    settings_uploader._issue_api_call()
+        except Exception as e:
+            self.log.exception('''Error while uploading settings
+                                to the Selene Web UI.''')
 
     def delete_data_after_reading(self):
         """
