@@ -1,6 +1,7 @@
 """
-__init__.py
-Copyright (C) 2020  Rigved Rakshit
+asgi_read_only.py
+ASGI config for apiv1 project.
+Modifications Copyright (C) 2020  Rigved Rakshit
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -14,6 +15,17 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/3.0/howto/deployment/asgi/
 """
 
+import os
 
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'apiv1.settings_read_only')
+
+application = get_asgi_application()

@@ -19,8 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from rest_framework import viewsets
 from rest_framework import permissions
-from .models import Webpage
-from .serializers import WebpageSerializer
+from .models import Webpage, Paste
+from .serializers import WebpageSerializer, PasteSerializer
 
 
 class WebpageViewSet(viewsets.ModelViewSet):
@@ -30,4 +30,13 @@ class WebpageViewSet(viewsets.ModelViewSet):
     """
     queryset = Webpage.objects.all()
     serializer_class = WebpageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class PasteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows adding new pastebin data that can be shared.
+    """
+    queryset = Paste.objects.all()
+    serializer_class = PasteSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -20,10 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from django.urls import include, path
 from django.conf import settings
 from rest_framework import routers
-from .webpages.views import WebpageViewSet
+from .webpages.views import WebpageViewSet, PasteViewSet
 
 router = routers.DefaultRouter()
 router.register(r'v1/webpages', WebpageViewSet)
+router.register(r'v1/paste', PasteViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

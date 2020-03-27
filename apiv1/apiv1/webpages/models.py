@@ -38,3 +38,12 @@ class Webpage(models.Model):
 
     class Meta:
         ordering = ['id']
+
+
+class Paste(models.Model):
+    paste_data = models.TextField(
+        help_text='The data that you want to share in this pastebin post.',
+        verbose_name='Paste Data')
+
+    class Meta:
+        ordering = ['id']

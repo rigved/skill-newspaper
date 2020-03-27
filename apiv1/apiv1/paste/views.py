@@ -1,6 +1,6 @@
 """
-__init__.py
-Copyright (C) 2020  Rigved Rakshit
+views.py
+Modifications Copyright (C) 2020  Rigved Rakshit
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,3 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+from rest_framework import viewsets
+from rest_framework import permissions
+from apiv1.webpages.models import Paste
+from apiv1.webpages.serializers import PasteSerializer
+
+
+class PasteViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows viewing pastebin data that can be shared.
+    """
+    queryset = Paste.objects.all()
+    serializer_class = PasteSerializer
+    permission_classes = [permissions.AllowAny]

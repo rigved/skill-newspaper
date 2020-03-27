@@ -1,6 +1,6 @@
 """
-__init__.py
-Copyright (C) 2020  Rigved Rakshit
+urls_read_only.py
+Modifications Copyright (C) 2020  Rigved Rakshit
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,3 +17,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+from django.urls import include, path
+from rest_framework import routers
+from .paste.views import PasteViewSet
+
+router = routers.DefaultRouter()
+router.register(r'v1/paste', PasteViewSet)
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

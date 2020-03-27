@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apiv1.webpages.apps.WebpagesConfig',
+    'apiv1.paste.apps.PasteConfig',
 ]
 
 MIDDLEWARE = [

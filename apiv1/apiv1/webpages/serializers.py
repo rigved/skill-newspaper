@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from rest_framework import serializers
 from django.core.validators import URLValidator
-from .models import Webpage
+from .models import Webpage, Paste
 import decimal
 from .summarizer import WebpageSummarizer
 
@@ -67,3 +67,9 @@ class WebpageSerializer(serializers.HyperlinkedModelSerializer):
         model = Webpage
         fields = '__all__'
         read_only_fields = ['webpage_title', 'webpage_summary']
+
+
+class PasteSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Paste
+        fields = '__all__'
