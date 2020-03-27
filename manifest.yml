@@ -9,6 +9,7 @@ dependencies:
   python:
     - lxml
     - mechanicalsoup
+    - pattern
     - gensim
     - django
     - argon2-cffi
@@ -21,7 +22,7 @@ dependencies:
 #   # This searches for the provided executable and uses the package names
   system:
     # For simple packages, this is all that is necessary
-    all: expect gcc gfortran python-dev libopenblas-dev liblapack-dev cython3 python3-numpy python3-scipy libxml2-dev libxslt1-dev python3-cryptography
+    all: expect gcc gfortran python-dev libopenblas-dev liblapack-dev cython3 python3-numpy python3-scipy libxml2-dev libxslt1-dev python3-cryptography libmysqlclient-dev
 #
 #     # If the package has a certain name on a different platform:
 #     pkcon: pianobar libpiano-dev  # For the mycroft platform
