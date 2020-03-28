@@ -54,6 +54,8 @@ class WebpageSummarizer(MycroftSkill):
         # Keep track of which web pages have been summarized out loud and
         # delete those entries from the Summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
+        # Keep track of when first run things need to be performed
+        self.first_run = True
 
     def initialize(self):
         """
@@ -63,7 +65,8 @@ class WebpageSummarizer(MycroftSkill):
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
         # Inform the user when the installation completes
-        if self.settings.get('__mycroft_skill_firstrun', False):
+        if self.first_run:
+            self.first_run = False
             self.speak('''The Mycroft AI Webpage Summarization skill
                        has been successfully installed and setup!''')
 
@@ -76,7 +79,7 @@ class WebpageSummarizer(MycroftSkill):
         """
         # Keep track of whether settings have changed locally
         settings_changed = {'api_token': False, 'root_ca': False}
-        if self.settings.get('api_token_reset', False):
+        if self.settings.get('api_token_reset', True):
             # Generate a new API token to authenticate with the
             # Summarization micro-service.
             result = subprocess.run([
@@ -94,7 +97,7 @@ class WebpageSummarizer(MycroftSkill):
                 self.log.error('Unable to generate API token.')
                 self.speak('''Error! Failed to generate an API token
                             for the Summarization micro-service.''')
-        if self.settings.get('root_ca_reset', False):
+        if self.settings.get('root_ca_reset', True):
             # Generate self-signed certificates to connect with the Summarization
             # micro-service over an encrypted TLS connection using HTTP/2. The
             # self-signed Root CA certificate is used by remote applications
