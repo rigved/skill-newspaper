@@ -149,9 +149,9 @@ class WebpageSummarizer(MycroftSkill):
                 name='Daphne ASGI Application Server over TLS and HTTP/2'
             )
             # Wait for the Summarization and Pastebin micro-services to finish booting up
-            self.daphne_process.join(15)
-            self.daphne_tls_process.join(15)
-            if self.daphne_process.is_alive() and self.daphne_tls_process.is_alive():
+            if self.daphne_process is not None and self.daphne_process.is_alive() and self.daphne_tls_process is not None and self.daphne_tls_process.is_alive():
+                self.daphne_process.join(15)
+                self.daphne_tls_process.join(15)
                 self.log.info('Daphne started successfully in the background.')
             else:
                 self.speak('''Error! The Summarization and Pastebin micro-services failed to
@@ -334,7 +334,7 @@ class WebpageSummarizer(MycroftSkill):
         """
         Cleanly stop the Daphne ASGI application server.
         """
-        if hasattr(self, 'daphne_process'):
+        if hasattr(self, 'daphne_process') and self.daphne_process is not None:
             try:
                 self.daphne_process.terminate()
                 if self.daphne_process.join(30) is not None:
@@ -343,7 +343,7 @@ class WebpageSummarizer(MycroftSkill):
                 self.log.info('Daphne stopped successfully.')
             except Exception as e:
                 self.log.exception('Error while shutting down the Daphne application server.')
-        if hasattr(self, 'daphne_tls_process'):
+        if hasattr(self, 'daphne_tls_process') and self.daphne_tls_process is not None:
             try:
                 self.daphne_tls_process.terminate()
                 if self.daphne_tls_process.join(30) is not None:
