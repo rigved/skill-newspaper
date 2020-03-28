@@ -58,7 +58,6 @@ class WebpageSummarizer(MycroftSkill):
         # Keep track of when first run things need to be performed
         self.first_run = True
         # Daphne ASGI process settings
-        multiprocessing.set_start_method('fork')
         self.daphne = CommandLineInterface()
         self.daphne_tls = CommandLineInterface()
         self.cwd = os.getcwd()
