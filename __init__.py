@@ -62,8 +62,10 @@ class WebpageSummarizer(MycroftSkill):
         """
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
-        self.speak('''The Mycroft AI Webpage Summarization skill
-                   has been successfully installed and setup!''')
+        # Inform the user when the installation completes
+        if self.settings.get('__mycroft_skill_firstrun', False):
+            self.speak('''The Mycroft AI Webpage Summarization skill
+                       has been successfully installed and setup!''')
 
     def on_settings_changed(self):
         """
