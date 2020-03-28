@@ -21,9 +21,10 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi, is_paired
 import os
-import time
 import requests
 import subprocess
+import multiprocessing
+from daphne.cli import CommandLineInterface
 
 
 class WebpageSummarizer(MycroftSkill):
@@ -56,6 +57,13 @@ class WebpageSummarizer(MycroftSkill):
         self.webpage_data_to_delete_after_reading = set()
         # Keep track of when first run things need to be performed
         self.first_run = True
+        # Daphne ASGI process settings
+        multiprocessing.set_start_method('fork')
+        self.daphne = CommandLineInterface()
+        self.daphne_tls = CommandLineInterface()
+        self.cwd = os.getcwd()
+        self.daphne_path = os.path.join(self.root_dir, 'apiv1')
+        self.daphne_process = self.daphne_tls_process = None
 
     def initialize(self):
         """
@@ -119,29 +127,39 @@ class WebpageSummarizer(MycroftSkill):
         # Start or restart the Summarization micro-service application server
         # using the new certificates.
         try:
-            # Stop the Summarization micro-service in case it is running
+            # Stop the Summarization and Pastebin micro-services in case they are running
             self.shutdown_daphne()
             # Start the Summarization and Pastebin micro-services in Daphne ASGI
             # application servers.
-            self.daphne = subprocess.Popen([
-                os.path.join(
-                    self.root_dir,
-                    'scripts/start_daphne.sh'
-                )
-            ]
+            self.daphne_process = self.start_daphne(
+                daphne_cli=self.daphne,
+                args=([
+                          '--bind', '0.0.0.0',
+                          '--port', '65080',
+                          'apiv1.asgi_read_only:application'],
+                ),
+                name='Daphne ASGI Application Server'
             )
-            self.daphne_ssl = subprocess.Popen([
-                os.path.join(
-                    self.root_dir,
-                    'scripts/start_daphne_over_tls.sh'
-                )
-            ]
+            self.daphne_tls_process = self.start_daphne(
+                daphne_cli=self.daphne_tls,
+                args=([
+                          '--endpoint',
+                          'ssl:65443:privateKey=secrets/mycroftai.shieldofachilles.in.key:certKey=secrets/mycroftai.shieldofachilles.in.crt',
+                          'apiv1.asgi:application'],
+                ),
+                name='Daphne ASGI Application Server over TLS and HTTP/2'
             )
             # Wait for the Summarization and Pastebin micro-services to finish booting up
-            time.sleep(30)
-            self.log.info('Daphne started successfully in the background.')
+            self.daphne_process.join(15)
+            self.daphne_tls_process.join(15)
+            if self.daphne_process.is_alive() and self.daphne_tls_process.is_alive():
+                self.log.info('Daphne started successfully in the background.')
+            else:
+                self.speak('''Error! The Summarization and Pastebin micro-services failed to
+                       start.''')
+                self.log.error('Daphne failed to start.')
         except Exception as e:
-            self.speak('''Error! The summarization micro-service failed to
+            self.speak('''Error! The Summarization and Pastebin micro-services failed to
                        start.''')
             self.log.exception('Daphne failed to start.')
         if settings_changed.get('api_token', False):
@@ -302,19 +320,36 @@ class WebpageSummarizer(MycroftSkill):
             self.log.exception('''Error while clearing the queue. Is the
                                summarization micro-service working?''')
 
+    def start_daphne(self, daphne_cli, name, args):
+        os.chdir(self.daphne_path)
+        daphne_process = multiprocessing.Process(
+            target=daphne_cli.run,
+            name=name,
+            args=args,
+            daemon=True,
+        )
+        os.chdir(self.cwd)
+        return daphne_process
+
     def shutdown_daphne(self):
         """
         Cleanly stop the Daphne ASGI application server.
         """
-        if hasattr(self, 'daphne'):
+        if hasattr(self, 'daphne_process'):
             try:
-                self.daphne.terminate()
+                self.daphne_process.terminate()
+                if self.daphne_process.join(30) is not None:
+                    self.daphne_process.kill()
+                self.daphne_process.close()
                 self.log.info('Daphne stopped successfully.')
             except Exception as e:
                 self.log.exception('Error while shutting down the Daphne application server.')
-        if hasattr(self, 'daphne_ssl'):
+        if hasattr(self, 'daphne_tls_process'):
             try:
-                self.daphne_ssl.terminate()
+                self.daphne_tls_process.terminate()
+                if self.daphne_tls_process.join(30) is not None:
+                    self.daphne_tls_process.kill()
+                self.daphne_tls_process.close()
                 self.log.info('Daphne-over-TLS stopped successfully.')
             except Exception as e:
                 self.log.exception('Error while shutting down the Daphne-over-TLS application server.')
