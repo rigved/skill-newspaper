@@ -22,4 +22,4 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/../apiv1/
 source /opt/venvs/mycroft-core/bin/activate
-daphne -p "65080" "apiv1.asgi_read_only:application"
+daphne --bind 0.0.0.0 --port "65080" "apiv1.asgi_read_only:application"
