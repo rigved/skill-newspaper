@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
-# start_daphne.sh
+# start_daphne_over_tls.sh
 # Copyright (C) 2020  Rigved Rakshit
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,4 +22,9 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/../apiv1/
 source /opt/venvs/mycroft-core/bin/activate
-daphne -p "65080" "apiv1.asgi_read_only:application"
+if [[ -f "secrets/mycroftai.shieldofachilles.in.key" ]] & [[ -f "secrets/mycroftai.shieldofachilles.in.crt" ]]; then
+    daphne -e "ssl:65443:privateKey=secrets/mycroftai.shieldofachilles.in.key:certKey=secrets/mycroftai.shieldofachilles.in.crt" "apiv1.asgi:application"
+else
+    echo "Private key and Certificate files missing."
+    exit 1
+fi

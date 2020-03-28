@@ -21,6 +21,7 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi, is_paired
 import os
+import time
 import requests
 import subprocess
 
@@ -44,7 +45,11 @@ class WebpageSummarizer(MycroftSkill):
                 )
             ])
         # Configuration for the Summarization micro-service
-        self.api_endpoint = 'https://localhost:65443/v1/webpages/'
+        self.api_endpoint_webpages = 'https://localhost:65443/v1/webpages/'
+        self.api_endpoint_pastebin = 'https://localhost:65443/v1/paste/'
+        self.api_endpoint_pastebin_read_only = 'http://mycroftai.shieldofachilles.in:65080/v1/paste/'
+        self.api_token_path = os.path.join(self.root_dir, 'apiv1/secrets/api.token')
+        self.root_ca_cert_path = os.path.join(self.root_dir, 'apiv1/secrets/rootCA.crt')
         self.headers = {}
         # Keep track of which web pages have been summarized out loud and
         # delete those entries from the Summarization micro-service queue.
@@ -67,74 +72,107 @@ class WebpageSummarizer(MycroftSkill):
         server. Start or restart the Daphne ASGI application server using
         the new certificates.
         """
-        # Load settings
-        self.api_token = self.settings.get('api_token', '')
-        self.root_ca = self.settings.get('root_ca', '')
         # Keep track of whether settings have changed locally
-        settings_changed = False
-        # Generate an API token to authenticate with the Summarization
-        # micro-service in case it is not set or unset.
-        if self.api_token == '':
-            subprocess.run([
+        settings_changed = {'api_token': False, 'root_ca': False}
+        if self.settings.get('api_token_reset', False):
+            # Generate a new API token to authenticate with the
+            # Summarization micro-service.
+            result = subprocess.run([
                 os.path.join(
                     self.root_dir,
                     'scripts/update_password_and_token.sh'
                 )
             ]
             )
-            if os.path.isfile(os.path.join(self.root_dir, 'apiv1/secrets/api.token')):
-                with open(os.path.join(self.root_dir, 'apiv1/secrets/api.token'), 'r') as f:
-                    self.settings['api_token'] = self.api_token = f.read().strip()
-                    settings_changed = True
-                os.remove(os.path.join(self.root_dir, 'apiv1/secrets/api.token'))
+            if result.returncode == 0:
+                self.log.info('New API token generated successfully.')
+                self.settings['api_token_reset'] = False
+                settings_changed['api_token'] = True
             else:
                 self.log.error('Unable to generate API token.')
                 self.speak('''Error! Failed to generate an API token
                             for the Summarization micro-service.''')
-            # Use this new API token for all future communication with
-            # the Summarization micro-service.
-            self.headers = {'Authorization': 'Token {}'.format(self.api_token)}
-            self.log.info('New API token generated successfully.')
-        # Generate self-signed certificates to connect with the Summarization
-        # micro-service over an encrypted TLS connection using HTTP/2 in case
-        # it is not set or unset. The self-signed Root CA certificate is used
-        # by remote applications to verify the authenticity of the self-signed
-        # certificate used by the Summarization micro-service application server.
-        if self.root_ca == '':
-            root_ca_cert = os.path.join(
-                self.root_dir,
-                'apiv1/secrets/rootCA.crt'
-            )
-            subprocess.run([os.path.join(
+        if self.settings.get('root_ca_reset', False):
+            # Generate self-signed certificates to connect with the Summarization
+            # micro-service over an encrypted TLS connection using HTTP/2. The
+            # self-signed Root CA certificate is used by remote applications
+            # to verify the authenticity of the self-signed certificate
+            # used by the Summarization micro-service application server.
+            result = subprocess.run([os.path.join(
                     self.root_dir,
                     'scripts/update_certificates.sh'
                 )
             ])
-            if os.path.isfile(root_ca_cert):
-                with open(root_ca_cert, 'r') as f:
-                    self.settings['root_ca'] = self.root_ca = f.read().strip()
-                    settings_changed = True
-            self.log.info('New certificates generated successfully.')
-            # Start or restart the Summarization micro-service application server
-            # using the new certificates.
-            try:
-                # Stop the Summarization micro-service in case it is running
-                self.shutdown_daphne()
-                # Start the Summarization micro-service in a Daphne ASGI
-                # application server.
-                self.daphne = subprocess.Popen([
-                    os.path.join(
-                        self.root_dir,
-                        'scripts/start_daphne.sh'
-                    )
-                ]
+            if result.returncode == 0:
+                self.log.info('New certificates generated successfully.')
+                self.settings['root_ca_reset'] = False
+                settings_changed['root_ca'] = True
+            else:
+                self.log.error('Unable to generate self-signed certificates.')
+                self.speak('''Error! Failed to generate self-signed certificates
+                            for the Summarization micro-service.''')
+        # Start or restart the Summarization micro-service application server
+        # using the new certificates.
+        try:
+            # Stop the Summarization micro-service in case it is running
+            self.shutdown_daphne()
+            # Start the Summarization and Pastebin micro-services in Daphne ASGI
+            # application servers.
+            self.daphne = subprocess.Popen([
+                os.path.join(
+                    self.root_dir,
+                    'scripts/start_daphne.sh'
                 )
-                self.log.info('Daphne started successfully in the background.')
-            except Exception as e:
-                self.speak('''Error! The summarization micro-service failed to
-                           start.''')
-                self.log.exception('Daphne failed to start.')
-        if settings_changed:
+            ]
+            )
+            self.daphne_ssl = subprocess.Popen([
+                os.path.join(
+                    self.root_dir,
+                    'scripts/start_daphne_over_tls.sh'
+                )
+            ]
+            )
+            # Wait for the Summarization and Pastebin micro-services to finish booting up
+            time.sleep(30)
+            self.log.info('Daphne started successfully in the background.')
+        except Exception as e:
+            self.speak('''Error! The summarization micro-service failed to
+                       start.''')
+            self.log.exception('Daphne failed to start.')
+        if settings_changed.get('api_token', False):
+            # Update settings to the new API token
+            if os.path.isfile(self.api_token_path):
+                with open(self.api_token_path, 'r') as f:
+                    self.settings['api_token'] = f.read().strip()
+                # Use this new API token for all future communication with
+                # the Summarization micro-service.
+                self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
+        if settings_changed.get('root_ca', False):
+            # Update settings to the new Root CA certificate
+            if os.path.isfile(self.root_ca_cert_path):
+                with open(self.root_ca_cert_path, 'r') as f:
+                    root_ca = f.read().strip()
+                try:
+                    response = requests.post(
+                        self.api_endpoint_pastebin,
+                        headers=self.headers,
+                        verify=self.root_ca_cert_path,
+                        data={'paste_data': root_ca}
+                    )
+                    if response.ok:
+                        paste_id = response.json().get('url').split('/')[-2]
+                        self.settings['root_ca'] = self.api_endpoint_pastebin_read_only + paste_id + '/'
+                        # Delete the previously generated Root CA certificate, if any
+                        if int(paste_id) > 1:
+                            response = requests.delete(
+                                self.api_endpoint_pastebin + str(int(paste_id) - 1) + '/',
+                                headers=self.headers,
+                                verify=self.root_ca_cert_path)
+                except Exception as e:
+                    self.log.error('Unable to share the self-signed Root CA certificate.')
+                    self.speak('''Error! Failed to share the self-signed Root CA certificate
+                                for the Summarization micro-service.''')
+        if settings_changed.get('api_token', False) or settings_changed.get('root_ca', False):
             # Upload new setting values to the Selene Web UI
             self.upload_settings()
 
@@ -147,7 +185,7 @@ class WebpageSummarizer(MycroftSkill):
         """
         try:
             # API end-point URL keeps changing as we process the data.
-            url = self.api_endpoint
+            url = self.api_endpoint_webpages
             # API supports pagination. So, determine if more pages need to be
             # processed.
             pending_pages = True
@@ -156,35 +194,36 @@ class WebpageSummarizer(MycroftSkill):
             first_dialog = True
             # Iterate through the summaries
             while pending_pages:
-                request = requests.get(
-                    url,
-                    headers=self.headers,
-                    verify=self.root_ca)
-                if request.ok:
-                    request_json = request.json()
-                    if request_json['next'] == '':
-                        pending_pages = False
-                    else:
-                        url = request_json['next']
-                    for webpage_data in request_json['results']:
-                        # Show the web page title on the Mycroft 1 mouth while
-                        # the long summary is being read out aloud.
-                        self.enclosure.mouth_text(webpage_data['webpage_title'])
-                        if first_dialog:
-                            first_dialog = False
-                            self.speak_dialog('summarizer.webpage')
-                            self.speak('''The first web page title is
-                                       {}'''.format(
-                                           request_json['webpage_title']))
+                if os.path.isfile(self.root_ca_cert_path):
+                    response = requests.get(
+                        url,
+                        headers=self.headers,
+                        verify=self.root_ca_cert_path)
+                    if response.ok:
+                        response_json = response.json()
+                        if response_json.get('next', '') == '':
+                            pending_pages = False
                         else:
-                            self.speak('''The next web page title is
+                            url = response_json.get('next')
+                        for webpage_data in response_json.get('results', list()):
+                            # Show the web page title on the Mycroft 1 mouth while
+                            # the long summary is being read out aloud.
+                            self.enclosure.mouth_text(webpage_data.get('webpage_title', ''))
+                            if first_dialog:
+                                first_dialog = False
+                                self.speak_dialog('summarizer.webpage')
+                                self.speak('''The first web page title is
+                                           {}'''.format(
+                                               webpage_data.get('webpage_title', '')))
+                            else:
+                                self.speak('''The next web page title is
+                                           {}'''.format(
+                                               webpage_data.get('webpage_title', '')))
+                            # Read out the summary of the web page.
+                            self.speak('''And the summary is as follows.
                                        {}'''.format(
-                                           request_json['webpage_title']))
-                        # Read out the summary of the web page.
-                        self.speak('''And the summary is as follows.
-                                   {}'''.format(
-                                       request_json['webpage_summary']))
-                        self.webpage_data_to_delete_after_reading.add(request_json['url'])
+                                           webpage_data.get('webpage_summary', '')))
+                            self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
             self.delete_data_after_reading()
             # Signal the end of the current queue to the user
             self.enclosure.mouth_text('No more summaries available.')
@@ -205,8 +244,7 @@ class WebpageSummarizer(MycroftSkill):
         out loud earlier. We need to do this because Mycroft may have been
         interrupted while it was processing the queue.
         """
-        if hasattr(self, 'delete_data_after_reading'):
-            self.delete_data_after_reading()
+        self.delete_data_after_reading()
 
     def shutdown(self):
         """
@@ -229,8 +267,8 @@ class WebpageSummarizer(MycroftSkill):
                 if settings_uploader.api.identity.uuid and settings_uploader.yaml_path.is_file():
                     settings_uploader._load_settings_meta_file()
                     settings_uploader._update_settings_meta()
-                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.api_token
-                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][3]['value'] = self.root_ca
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
                     settings_uploader._issue_api_call()
                     self.log.info('''New setting values uploaded successfully
                                     to the Selene Web UI.''')
@@ -248,11 +286,12 @@ class WebpageSummarizer(MycroftSkill):
         try:
             deletion_list = self.webpage_data_to_delete_after_reading.copy()
             for url in deletion_list:
-                request = requests.delete(
+                response = requests.delete(
                     url,
                     headers=self.headers,
-                    verify=self.root_ca)
-                self.webpage_data_to_delete_after_reading.remove(url)
+                    verify=self.root_ca_cert_path)
+                if response.ok:
+                    self.webpage_data_to_delete_after_reading.remove(url)
             self.log.info('Cleared summaries from queue.')
         except Exception as e:
             self.log.exception('''Error while clearing the queue. Is the
@@ -265,14 +304,15 @@ class WebpageSummarizer(MycroftSkill):
         if hasattr(self, 'daphne'):
             try:
                 self.daphne.terminate()
-                subprocess.run([
-                    'pkill',
-                    'daphne'
-                ])
                 self.log.info('Daphne stopped successfully.')
             except Exception as e:
-                self.log.exception('''Error while shutting down the Daphne micro-service.
-                                    Is the summarization micro-service working?''')
+                self.log.exception('Error while shutting down the Daphne application server.')
+        if hasattr(self, 'daphne_ssl'):
+            try:
+                self.daphne_ssl.terminate()
+                self.log.info('Daphne-over-TLS stopped successfully.')
+            except Exception as e:
+                self.log.exception('Error while shutting down the Daphne-over-TLS application server.')
 
 
 def create_skill():
