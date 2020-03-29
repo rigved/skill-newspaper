@@ -407,7 +407,18 @@ class WebpageSummarizer(MycroftSkill):
         self.log.debug('shutdown_daphne() started')
         if hasattr(self, 'daphne') and self.daphne is not None:
             try:
+                self.log.debug('Sending SIGTERM signal to Daphne ASGI application server')
                 self.daphne.terminate()
+                if self.daphne.poll() is None:
+                    self.log.debug('Sending SIGKILL signal to Daphne ASGI application server')
+                    self.daphne.kill()
+                    if self.daphne.poll() is None:
+                        raise Exception('Unable to stop Daphne ASGI application server')
+                self.log.debug('Daphne ASGI application server successfully shut down with exit code: {}'.format(
+                    self.daphne.returncode
+                ))
+                # Release resources
+                self.daphne = None
             except Exception as e:
                 self.log.exception('Error while shutting down the Daphne application server \
                                    due to an exception -\n{}'.format(
@@ -415,7 +426,18 @@ class WebpageSummarizer(MycroftSkill):
                 ))
         if hasattr(self, 'daphne') and self.daphne_tls is not None:
             try:
+                self.log.debug('Sending SIGTERM signal to Daphne-over-TLS ASGI application server')
                 self.daphne_tls.terminate()
+                if self.daphne_tls.poll() is None:
+                    self.log.debug('Sending SIGKILL signal to Daphne-over-TLS ASGI application server')
+                    self.daphne_tls.kill()
+                    if self.daphne_tls.poll() is None:
+                        raise Exception('Unable to stop Daphne-over-TLS ASGI application server')
+                self.log.debug('Daphne-over-TLS ASGI application server successfully shut down with exit code: {}'.format(
+                    self.daphne.returncode
+                ))
+                # Release resources
+                self.daphne_tls = None
             except Exception as e:
                 self.log.exception('Error while shutting down the Daphne-over-TLS application server \
                                    due to an exception -\n{}'.format(
