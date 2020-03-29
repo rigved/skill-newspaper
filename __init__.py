@@ -170,10 +170,9 @@ class WebpageSummarizer(MycroftSkill):
             if os.path.isfile(self.api_token_path):
                 with open(self.api_token_path, 'r') as f:
                     self.settings['api_token'] = f.read().strip()
-                # Use this new API token for all future communication with
-                # the Summarization micro-service.
-                self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
                 self.log.info('New API token loaded successfully')
+        # Use this API token for all future communication with the Summarization micro-service
+        self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
         if settings_changed.get('root_ca', False):
             # Update settings to the new Root CA certificate
             if os.path.isfile(self.root_ca_cert_path):
