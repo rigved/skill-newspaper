@@ -415,7 +415,7 @@ class WebpageSummarizer(MycroftSkill):
                     verify=self.root_ca_cert_path)
                 if response.ok:
                     self.webpage_data_to_delete_after_reading.remove(url)
-                    self.log.debug'[{}]: Successfully deleted an archived summary from storage'.format(self.name))
+                    self.log.debug('[{}]: Successfully deleted an archived summary from storage'.format(self.name))
                 else:
                     self.log.error('[{}]: Error while deleting archived summaries'.format(self.name))
                     # Increase verbosity for troubleshooting
