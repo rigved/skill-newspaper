@@ -21,6 +21,7 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi, is_paired
 import os
+import time
 import requests
 import subprocess
 import multiprocessing
@@ -189,6 +190,7 @@ class WebpageSummarizer(MycroftSkill):
                 name='Daphne ASGI Application Server over TLS and HTTP/2'
             )
             # Wait for the Summarization and Pastebin micro-services to finish booting up
+            time.sleep(30)
             if self.daphne_process is not None and self.daphne_process.is_alive():
                 self.log.info('Daphne started successfully in the background')
             else:
@@ -433,7 +435,7 @@ class WebpageSummarizer(MycroftSkill):
             target=daphne_cli.run,
             name=name,
             args=args,
-            daemon=True,
+            daemon=False,
         )
         os.chdir(self.cwd)
         self.log.debug('start_daphne() completed')
