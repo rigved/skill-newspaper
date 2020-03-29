@@ -409,9 +409,11 @@ class WebpageSummarizer(MycroftSkill):
             try:
                 self.log.debug('Sending SIGTERM signal to Daphne ASGI application server')
                 self.daphne.terminate()
+                time.sleep(5)
                 if self.daphne.poll() is None:
                     self.log.debug('Sending SIGKILL signal to Daphne ASGI application server')
                     self.daphne.kill()
+                    time.sleep(5)
                     if self.daphne.poll() is None:
                         raise Exception('Unable to stop Daphne ASGI application server')
                 self.log.debug('Daphne ASGI application server successfully shut down with exit code: {}'.format(
@@ -428,13 +430,15 @@ class WebpageSummarizer(MycroftSkill):
             try:
                 self.log.debug('Sending SIGTERM signal to Daphne-over-TLS ASGI application server')
                 self.daphne_tls.terminate()
+                time.sleep(5)
                 if self.daphne_tls.poll() is None:
                     self.log.debug('Sending SIGKILL signal to Daphne-over-TLS ASGI application server')
                     self.daphne_tls.kill()
+                    time.sleep(5)
                     if self.daphne_tls.poll() is None:
                         raise Exception('Unable to stop Daphne-over-TLS ASGI application server')
                 self.log.debug('Daphne-over-TLS ASGI application server successfully shut down with exit code: {}'.format(
-                    self.daphne.returncode
+                    self.daphne_tls.returncode
                 ))
                 # Release resources
                 self.daphne_tls = None
