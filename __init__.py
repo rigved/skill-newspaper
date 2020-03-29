@@ -256,10 +256,12 @@ class WebpageSummarizer(MycroftSkill):
                                 self.log.info('[{}]: Old Root CA certificate deleted successfully'.format(self.name))
                             else:
                                 self.log.error('[{}]: Unable to delete the old Root CA certificate'.format(self.name))
+                                # Increase verbosity for troubleshooting
                                 response.raise_for_status()
                     else:
                         self.log.error('[{}]: Unable to add the new Root CA certificate \
                                        to the pastebin'.format(self.name))
+                        # Increase verbosity for troubleshooting
                         response.raise_for_status()
                 except Exception as e:
                     self.speak('''Error! Failed to share the self-signed Root CA certificate
@@ -326,6 +328,10 @@ class WebpageSummarizer(MycroftSkill):
                                            webpage_data.get('webpage_summary', '')))
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('[{}]: Successfully read a summary'.format(self.name))
+                    else:
+                        self.log.error('[{}]: Unable to fetch summaries'.format(self.name))
+                        # Increase verbosity for troubleshooting
+                        response.raise_for_status()
             self.delete_data_after_reading()
             # Signal the end of the current queue to the user
             self.enclosure.mouth_text('No more summaries available.')
@@ -412,6 +418,7 @@ class WebpageSummarizer(MycroftSkill):
                     self.log.debug'[{}]: Successfully deleted an archived summary from storage'.format(self.name))
                 else:
                     self.log.error('[{}]: Error while deleting archived summaries'.format(self.name))
+                    # Increase verbosity for troubleshooting
                     response.raise_for_status()
             self.log.info('[{}]: Cleared all archived summaries from queue'.format(self.name))
         except Exception as e:
