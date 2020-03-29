@@ -251,7 +251,7 @@ class WebpageSummarizer(MycroftSkill):
                         verify=self.root_ca_cert_path)
                     if response.ok:
                         response_json = response.json()
-                        if response_json.get('next', '') == '':
+                        if response_json.get('next', None) is None:
                             pending_pages = False
                             self.log.debug('Found last page of summaries to read')
                         else:
