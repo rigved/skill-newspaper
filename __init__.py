@@ -38,7 +38,7 @@ class WebpageSummarizer(MycroftSkill):
         micro-service.
         """
         MycroftSkill.__init__(self)
-        self.log.debug('[{}]: __init__() started after call to super()'.format(self.name))
+        self.log.debug('__init__() started after call to super()')
         # Setup Django project and app
         if not os.path.isfile(os.path.join(self.root_dir, 'apiv1/db.sqlite3')):
             result = subprocess.run([
@@ -50,12 +50,11 @@ class WebpageSummarizer(MycroftSkill):
                 text=True
             )
             if result.returncode == 0:
-                self.log.info('[{}]: Django setup successfully'.format(self.name))
+                self.log.info('Django setup successfully')
             else:
-                self.log.error('[{}]: Django was not setup because \
+                self.log.error('Django was not setup because \
                                the subprocess returned error code {} \
                                with error message "{}"'.format(
-                    self.name,
                     result.returncode,
                     result.stderr
                 ))
@@ -79,14 +78,14 @@ class WebpageSummarizer(MycroftSkill):
         self.cwd = os.getcwd()
         self.daphne_path = os.path.join(self.root_dir, 'apiv1')
         self.daphne_process = self.daphne_tls_process = None
-        self.log.debug('[{}]: __init__() completed'.format(self.name))
+        self.log.debug('__init__() completed')
 
     def initialize(self):
         """
         Handle changes in settings and inform the user once the skill has been
         setup and installed for the first time.
         """
-        self.log.debug('[{}]: initialize() started'.format(self.name))
+        self.log.debug('initialize() started')
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
         # Inform the user when the installation completes
@@ -94,8 +93,8 @@ class WebpageSummarizer(MycroftSkill):
             self.first_run = False
             self.speak('''The Mycroft AI Webpage Summarization skill
                        has been successfully installed and setup!''')
-            self.log.info('[{}]: Skill first run completed')
-        self.log.debug('[{}]: initialize() completed'.format(self.name))
+            self.log.info('Skill first run completed')
+        self.log.debug('initialize() completed')
 
     def on_settings_changed(self):
         """
@@ -104,13 +103,13 @@ class WebpageSummarizer(MycroftSkill):
         server. Start or restart the Daphne ASGI application server using
         the new certificates.
         """
-        self.log.debug('[{}]: on_settings_changed() started'.format(self.name))
+        self.log.debug('on_settings_changed() started')
         # Keep track of whether settings have changed locally
         settings_changed = {'api_token': False, 'root_ca': False}
         if self.settings.get('api_token_reset', True):
             # Generate a new API token to authenticate with the
             # Summarization micro-service.
-            self.log.info('[{}]: API token needs to be (re)set'.format(self.name))
+            self.log.info('API token needs to be (re)set')
             result = subprocess.run([
                 os.path.join(
                     self.root_dir,
@@ -120,14 +119,13 @@ class WebpageSummarizer(MycroftSkill):
                 text=True
             )
             if result.returncode == 0:
-                self.log.info('[{}]: New API token generated successfully'.format(self.name))
+                self.log.info('New API token generated successfully')
                 self.settings['api_token_reset'] = False
                 settings_changed['api_token'] = True
             else:
-                self.log.error('[{}]: Unable to generate API token \
+                self.log.error('Unable to generate API token \
                     because subprocess returned error code {} \
                     with error message "{}"'.format(
-                    self.name,
                     result.returncode,
                     result.stderr
                 ))
@@ -139,7 +137,7 @@ class WebpageSummarizer(MycroftSkill):
             # self-signed Root CA certificate is used by remote applications
             # to verify the authenticity of the self-signed certificate
             # used by the Summarization micro-service application server.
-            self.log.info('[{}]: Self-signed certificates need be to (re-)generated'.format(self.name))
+            self.log.info('Self-signed certificates need be to (re-)generated')
             result = subprocess.run([os.path.join(
                     self.root_dir,
                     'scripts/update_certificates.sh'
@@ -148,14 +146,13 @@ class WebpageSummarizer(MycroftSkill):
                 text=True
             )
             if result.returncode == 0:
-                self.log.info('[{}]: New certificates generated successfully'.format(self.name))
+                self.log.info('New certificates generated successfully')
                 self.settings['root_ca_reset'] = False
                 settings_changed['root_ca'] = True
             else:
-                self.log.error('[{}]: Unable to generate self-signed certificates \
+                self.log.error('Unable to generate self-signed certificates \
                                because subprocess returned error code {}\
                                with error message "{}"'.format(
-                    self.name,
                     result.returncode,
                     result.stderr
                 ))
@@ -163,7 +160,7 @@ class WebpageSummarizer(MycroftSkill):
                             for the Summarization micro-service.''')
         # Start or restart the Summarization micro-service application server
         # using the new certificates.
-        self.log.info('[{}]: Restarting Daphne ASGI application servers'.format(self.name))
+        self.log.info('Restarting Daphne ASGI application servers')
         try:
             # Stop the Summarization and Pastebin micro-services in case they are running
             self.shutdown_daphne()
@@ -193,21 +190,19 @@ class WebpageSummarizer(MycroftSkill):
             )
             # Wait for the Summarization and Pastebin micro-services to finish booting up
             if self.daphne_process is not None and self.daphne_process.is_alive():
-                self.log.info('[{}]: Daphne started successfully in the background'.format(self.name))
+                self.log.info('Daphne started successfully in the background')
             else:
-                self.log.error('[{}]: Daphne failed to start because \
+                self.log.error('Daphne failed to start because \
                                the process returned an exit code {}'.format(
-                    self.name,
                     self.daphne_process.exitcode
                 ))
                 self.speak('''Error! The Summarization and Pastebin micro-services failed to
                        start.''')
             if self.daphne_tls_process is not None and self.daphne_tls_process.is_alive():
-                self.log.info('[{}]: Daphne-over-TLS started successfully in the background'.format(self.name))
+                self.log.info('Daphne-over-TLS started successfully in the background')
             else:
-                self.log.error('[{}]: Daphne-over-TLS failed to start because \
+                self.log.error('Daphne-over-TLS failed to start because \
                                the process returned an exit code {}'.format(
-                    self.name,
                     self.daphne_tls_process.exitcode
                 ))
                 self.speak('''Error! The Pastebin read-only micro-services failed to
@@ -215,9 +210,8 @@ class WebpageSummarizer(MycroftSkill):
         except Exception as e:
             self.speak('''Error! The Summarization and Pastebin micro-services failed to
                        start.''')
-            self.log.exception('[{}]: Daphne failed to start \
+            self.log.exception('Daphne failed to start \
                                due to an exception -\n{}'.format(
-                self.name,
                 e
             ))
         if settings_changed.get('api_token', False):
@@ -228,7 +222,7 @@ class WebpageSummarizer(MycroftSkill):
                 # Use this new API token for all future communication with
                 # the Summarization micro-service.
                 self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
-                self.log.info('[{}]: New API token loaded successfully'.format(self.name))
+                self.log.info('New API token loaded successfully')
         if settings_changed.get('root_ca', False):
             # Update settings to the new Root CA certificate
             if os.path.isfile(self.root_ca_cert_path):
@@ -242,10 +236,10 @@ class WebpageSummarizer(MycroftSkill):
                         data={'paste_data': root_ca}
                     )
                     if response.ok:
-                        self.log.info('[{}]: New Root CA certificate successfully added to pastebin'.format(self.name))
+                        self.log.info('New Root CA certificate successfully added to pastebin')
                         paste_id = response.json().get('url').split('/')[-2]
                         self.settings['root_ca'] = self.api_endpoint_pastebin_read_only + paste_id + '/'
-                        self.log.info('[{}]: New Root CA loaded successfully'.format(self.name))
+                        self.log.info('New Root CA loaded successfully')
                         # Delete the previously generated Root CA certificate, if any
                         if int(paste_id) > 1:
                             response = requests.delete(
@@ -253,28 +247,27 @@ class WebpageSummarizer(MycroftSkill):
                                 headers=self.headers,
                                 verify=self.root_ca_cert_path)
                             if response.ok:
-                                self.log.info('[{}]: Old Root CA certificate deleted successfully'.format(self.name))
+                                self.log.info('Old Root CA certificate deleted successfully')
                             else:
-                                self.log.error('[{}]: Unable to delete the old Root CA certificate'.format(self.name))
+                                self.log.error('Unable to delete the old Root CA certificate')
                                 # Increase verbosity for troubleshooting
                                 response.raise_for_status()
                     else:
-                        self.log.error('[{}]: Unable to add the new Root CA certificate \
-                                       to the pastebin'.format(self.name))
+                        self.log.error('Unable to add the new Root CA certificate \
+                                       to the pastebin')
                         # Increase verbosity for troubleshooting
                         response.raise_for_status()
                 except Exception as e:
                     self.speak('''Error! Failed to share the self-signed Root CA certificate
                                 for the Summarization micro-service.''')
-                    self.log.exception('[{}]: Unable to share the self-signed Root CA certificate \
+                    self.log.exception('Unable to share the self-signed Root CA certificate \
                                        due to an exception -\n{}'.format(
-                        self.name,
                         e
                     ))
         if settings_changed.get('api_token', False) or settings_changed.get('root_ca', False):
             # Upload new setting values to the Selene Web UI
             self.upload_settings()
-        self.log.debug('[{}]: on_settings_changed() completed'.format(self.name))
+        self.log.debug('on_settings_changed() completed')
 
     @intent_file_handler('summarizer.webpage.intent')
     def handle_summarizer_webpage(self, message):
@@ -283,7 +276,7 @@ class WebpageSummarizer(MycroftSkill):
         out loud.
         :param message: The voice command issued by the user.
         """
-        self.log.debug('[{}]: handle_summarizer_webpage() started'.format(self.name))
+        self.log.debug('handle_summarizer_webpage() started')
         try:
             # API end-point URL keeps changing as we process the data.
             url = self.api_endpoint_webpages
@@ -304,7 +297,7 @@ class WebpageSummarizer(MycroftSkill):
                         response_json = response.json()
                         if response_json.get('next', '') == '':
                             pending_pages = False
-                            self.log.debug('[{}]: Found last page of summaries to read'.format(self.name))
+                            self.log.debug('Found last page of summaries to read')
                         else:
                             url = response_json.get('next')
                         for webpage_data in response_json.get('results', list()):
@@ -312,7 +305,7 @@ class WebpageSummarizer(MycroftSkill):
                             # the long summary is being read out aloud.
                             self.enclosure.mouth_text(webpage_data.get('webpage_title', ''))
                             if first_dialog:
-                                self.log.debug('[{}]: Found summaries to read'.format(self.name))
+                                self.log.debug('Found summaries to read')
                                 first_dialog = False
                                 self.speak_dialog('summarizer.webpage')
                                 self.speak('''The first web page title is
@@ -327,9 +320,9 @@ class WebpageSummarizer(MycroftSkill):
                                        {}'''.format(
                                            webpage_data.get('webpage_summary', '')))
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
-                            self.log.debug('[{}]: Successfully read a summary'.format(self.name))
+                            self.log.debug('Successfully read a summary')
                     else:
-                        self.log.error('[{}]: Unable to fetch summaries'.format(self.name))
+                        self.log.error('Unable to fetch summaries')
                         # Increase verbosity for troubleshooting
                         response.raise_for_status()
             self.delete_data_after_reading()
@@ -337,18 +330,17 @@ class WebpageSummarizer(MycroftSkill):
             self.enclosure.mouth_text('No more summaries available.')
             self.speak('There are no more summaries available.')
             self.enclosure.reset()
-            self.log.debug('[{}]: Finished reading all summaries'.format(self.name))
+            self.log.debug('Finished reading all summaries')
         except Exception as e:
             self.enclosure.mouth_text('Error')
             self.speak('''There was an error. Is the summarization
                        micro-service working?''')
             self.enclosure.reset()
-            self.log.exception('[{}]: Unable to work with the Daphne application server(s) \
+            self.log.exception('Unable to work with the Daphne application server(s) \
                                due to an exception -\n{}'.format(
-                self.name,
                 e
             ))
-        self.log.debug('[{}]: handle_summarizer_webpage() completed'.format(self.name))
+        self.log.debug('handle_summarizer_webpage() completed')
 
     def stop(self):
         """
@@ -357,24 +349,24 @@ class WebpageSummarizer(MycroftSkill):
         out loud earlier. We need to do this because Mycroft may have been
         interrupted while it was processing the queue.
         """
-        self.log.debug('[{}]: stop() started'.format(self.name))
+        self.log.debug('stop() started')
         self.delete_data_after_reading()
-        self.log.debug('[{}]: stop() completed'.format(self.name))
+        self.log.debug('stop() completed')
 
     def shutdown(self):
         """
         Stop the Summarization micro-service cleanly before shutting down. This
         allows any pending transactions to be completed.
         """
-        self.log.debug('[{}]: shutdown() started'.format(self.name))
+        self.log.debug('shutdown() started')
         self.shutdown_daphne()
-        self.log.debug('[{}]: shutdown() started'.format(self.name))
+        self.log.debug('shutdown() started')
 
     def upload_settings(self):
         """
         Upload new setting values to the Selene Web UI.
         """
-        self.log.debug('[{}]: upload_settings() started'.format(self.name))
+        self.log.debug('upload_settings() started')
         try:
             settings_uploader = SettingsMetaUploader(
                 self.root_dir,
@@ -388,15 +380,14 @@ class WebpageSummarizer(MycroftSkill):
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
                     settings_uploader._issue_api_call()
-                    self.log.info('[{}]: New setting values uploaded successfully \
-                                    to the Selene Web UI'.format(self.name))
+                    self.log.info('New setting values uploaded successfully \
+                                    to the Selene Web UI')
         except Exception as e:
-            self.log.exception('[{}]: Unable to upload settings to the Selene Web UI \
+            self.log.exception('Unable to upload settings to the Selene Web UI \
                                 due to an exception -\n{}'.format(
-                self.name,
                 e
             ))
-        self.log.debug('[{}]: upload_settings() completed'.format(self.name))
+        self.log.debug('upload_settings() completed')
 
     def delete_data_after_reading(self):
         """
@@ -405,7 +396,7 @@ class WebpageSummarizer(MycroftSkill):
         out loud earlier. We need to do this because Mycroft may have been
         interrupted while it was processing the queue.
         """
-        self.log.debug('[{}]: delete_data_after_reading() started'.format(self.name))
+        self.log.debug('delete_data_after_reading() started')
         try:
             deletion_list = self.webpage_data_to_delete_after_reading.copy()
             for url in deletion_list:
@@ -415,19 +406,18 @@ class WebpageSummarizer(MycroftSkill):
                     verify=self.root_ca_cert_path)
                 if response.ok:
                     self.webpage_data_to_delete_after_reading.remove(url)
-                    self.log.debug('[{}]: Successfully deleted an archived summary from storage'.format(self.name))
+                    self.log.debug('Successfully deleted an archived summary from storage')
                 else:
-                    self.log.error('[{}]: Error while deleting archived summaries'.format(self.name))
+                    self.log.error('Error while deleting archived summaries')
                     # Increase verbosity for troubleshooting
                     response.raise_for_status()
-            self.log.info('[{}]: Cleared all archived summaries from queue'.format(self.name))
+            self.log.info('Cleared all archived summaries from queue')
         except Exception as e:
-            self.log.exception('[{}]: Unable to clear the queue of archived summaries \
+            self.log.exception('Unable to clear the queue of archived summaries \
                                due to an exception -\n{}'.format(
-                self.name,
                 e
             ))
-        self.log.debug('[{}]: delete_data_after_reading() completed'.format(self.name))
+        self.log.debug('delete_data_after_reading() completed')
 
     def start_daphne(self, daphne_cli, name, args):
         """
@@ -437,7 +427,7 @@ class WebpageSummarizer(MycroftSkill):
         :param args: The list of arguments to pass to the CommandLineInterface instance's .run() method.
         :return: A multiprocessing.Process instance, within the current context, for the Daphne ASGI application server.
         """
-        self.log.debug('[{}]: start_daphne() started'.format(self.name))
+        self.log.debug('start_daphne() started')
         os.chdir(self.daphne_path)
         daphne_process = self.daphne_context.Process(
             target=daphne_cli.run,
@@ -446,45 +436,43 @@ class WebpageSummarizer(MycroftSkill):
             daemon=True,
         )
         os.chdir(self.cwd)
-        self.log.debug('[{}]: start_daphne() completed'.format(self.name))
+        self.log.debug('start_daphne() completed')
         return daphne_process
 
     def shutdown_daphne(self):
         """
         Cleanly stop the Daphne ASGI application server.
         """
-        self.log.debug('[{}]: shutdown_daphne() started'.format(self.name))
+        self.log.debug('shutdown_daphne() started')
         if hasattr(self, 'daphne_process') and self.daphne_process is not None:
             try:
-                self.log.debug('[{}]: Sending SIGTERM to Daphne process'.format(self.name))
+                self.log.debug('Sending SIGTERM to Daphne process')
                 self.daphne_process.terminate()
                 if self.daphne_process.join(30) is not None:
-                    self.log.debug('[{}]: Sending SIGKILL to Daphne process'.format(self.name))
+                    self.log.debug('Sending SIGKILL to Daphne process')
                     self.daphne_process.kill()
                 self.daphne_process.close()
-                self.log.debug('[{}]: Daphne stopped successfully'.format(self.name))
+                self.log.debug('Daphne stopped successfully')
             except Exception as e:
-                self.log.exception('[{}]: Error while shutting down the Daphne application server \
+                self.log.exception('Error while shutting down the Daphne application server \
                                    due to an exception -\n{}'.format(
-                    self.name,
                     e
                 ))
         if hasattr(self, 'daphne_tls_process') and self.daphne_tls_process is not None:
             try:
-                self.log.debug('[{}]: Sending SIGTERM to Daphne-over-TLS process'.format(self.name))
+                self.log.debug('Sending SIGTERM to Daphne-over-TLS process')
                 self.daphne_tls_process.terminate()
                 if self.daphne_tls_process.join(30) is not None:
-                    self.log.debug('[{}]: Sending SIGKILL to Daphne-over-TLS process'.format(self.name))
+                    self.log.debug('Sending SIGKILL to Daphne-over-TLS process')
                     self.daphne_tls_process.kill()
                 self.daphne_tls_process.close()
-                self.log.debug('[{}]: Daphne-over-TLS stopped successfully'.format(self.name))
+                self.log.debug('Daphne-over-TLS stopped successfully')
             except Exception as e:
-                self.log.exception('[{}]: Error while shutting down the Daphne-over-TLS application server \
+                self.log.exception('Error while shutting down the Daphne-over-TLS application server \
                                    due to an exception -\n{}'.format(
-                    self.name,
                     e
                 ))
-        self.log.debug('[{}]: shutdown_daphne() completed'.format(self.name))
+        self.log.debug('shutdown_daphne() completed')
 
 
 def create_skill():
