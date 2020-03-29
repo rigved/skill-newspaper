@@ -96,8 +96,6 @@ class WebpageSummarizer(MycroftSkill):
         the new certificates.
         """
         self.log.debug('on_settings_changed() started')
-        # Keep track of whether settings have changed locally
-        settings_changed = {'api_token': False, 'root_ca': False}
         if self.settings.get('api_token_reset', True):
             # Generate a new API token to authenticate with the
             # Summarization micro-service.
@@ -113,7 +111,6 @@ class WebpageSummarizer(MycroftSkill):
             if result.returncode == 0:
                 self.log.info('New API token generated successfully')
                 self.settings['api_token_reset'] = False
-                settings_changed['api_token'] = True
             else:
                 self.log.error('Unable to generate API token \
                     because subprocess returned error code {} \
@@ -140,7 +137,6 @@ class WebpageSummarizer(MycroftSkill):
             if result.returncode == 0:
                 self.log.info('New certificates generated successfully')
                 self.settings['root_ca_reset'] = False
-                settings_changed['root_ca'] = True
             else:
                 self.log.error('Unable to generate self-signed certificates \
                                because subprocess returned error code {}\
@@ -165,64 +161,61 @@ class WebpageSummarizer(MycroftSkill):
                                due to an exception -\n{}'.format(
                 e
             ))
-        if settings_changed.get('api_token', False):
-            # Update settings to the new API token
-            if os.path.isfile(self.api_token_path):
-                with open(self.api_token_path, 'r') as f:
-                    self.settings['api_token'] = f.read().strip()
-                # Use this new API token for all future communication with
-                # the Summarization micro-service.
-                self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
-                self.log.info('New API token loaded successfully')
-        if settings_changed.get('root_ca', False):
-            # Update settings to the new Root CA certificate
-            if os.path.isfile(self.root_ca_cert_path):
-                with open(self.root_ca_cert_path, 'r') as f:
-                    root_ca = f.read().strip()
-                try:
-                    response = requests.post(
-                        self.api_endpoint_pastebin,
-                        headers=self.headers,
-                        verify=self.root_ca_cert_path,
-                        data={'paste_data': root_ca}
-                    )
-                    if response.ok:
-                        self.log.info('New Root CA certificate successfully added to pastebin')
-                        paste_id = response.json().get('url').split('/')[-2]
-                        self.settings['root_ca'] = self.api_endpoint_pastebin_read_only + paste_id + '/'
-                        self.log.info('New Root CA loaded successfully')
-                        # Delete the previously generated Root CA certificate, if any
-                        if int(paste_id) > 1:
-                            response = requests.delete(
-                                self.api_endpoint_pastebin + str(int(paste_id) - 1) + '/',
-                                headers=self.headers,
-                                verify=self.root_ca_cert_path)
-                            if response.ok:
-                                self.log.info('Old Root CA certificate deleted successfully')
-                            else:
-                                self.log.error('Unable to delete the old Root CA certificate')
-                                # Increase verbosity for troubleshooting
-                                response.raise_for_status()
-                    else:
-                        self.log.error('Unable to add the new Root CA certificate \
-                                       to the pastebin')
-                        # Increase verbosity for troubleshooting
-                        response.raise_for_status()
-                except Exception as e:
-                    self.speak('''Error! Failed to share the self-signed Root CA certificate
-                                for the Summarization micro-service.''')
-                    self.log.exception('Unable to share the self-signed Root CA certificate \
-                                       due to an exception -\n{}'.format(
-                        e
-                    ))
-        if settings_changed.get('api_token', False) or settings_changed.get('root_ca', False):
-            # Upload new setting values to the Selene Web UI. If this is the first run, then upload the settings
-            # after 60 seconds because skill registration to the Selene web UI takes time.
-            if self.first_run:
-                self.schedule_event(handler=self.upload_settings, when=60, name='FirstRunUploadNewSettingValues')
-                self.log.info('New setting values will be uploaded after 60 seconds')
-            else:
-                self.upload_settings()
+        # Update settings to the new API token
+        if os.path.isfile(self.api_token_path):
+            with open(self.api_token_path, 'r') as f:
+                self.settings['api_token'] = f.read().strip()
+            # Use this new API token for all future communication with
+            # the Summarization micro-service.
+            self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
+            self.log.info('New API token loaded successfully')
+        # Update settings to the new Root CA certificate
+        if os.path.isfile(self.root_ca_cert_path):
+            with open(self.root_ca_cert_path, 'r') as f:
+                root_ca = f.read().strip()
+            try:
+                response = requests.post(
+                    self.api_endpoint_pastebin,
+                    headers=self.headers,
+                    verify=self.root_ca_cert_path,
+                    data={'paste_data': root_ca}
+                )
+                if response.ok:
+                    self.log.info('New Root CA certificate successfully added to pastebin')
+                    paste_id = response.json().get('url').split('/')[-2]
+                    self.settings['root_ca'] = self.api_endpoint_pastebin_read_only + paste_id + '/'
+                    self.log.info('New Root CA loaded successfully')
+                    # Delete the previously generated Root CA certificate, if any
+                    if int(paste_id) > 1:
+                        response = requests.delete(
+                            self.api_endpoint_pastebin + str(int(paste_id) - 1) + '/',
+                            headers=self.headers,
+                            verify=self.root_ca_cert_path)
+                        if response.ok:
+                            self.log.info('Old Root CA certificate deleted successfully')
+                        else:
+                            self.log.error('Unable to delete the old Root CA certificate')
+                            # Increase verbosity for troubleshooting
+                            response.raise_for_status()
+                else:
+                    self.log.error('Unable to add the new Root CA certificate \
+                                   to the pastebin')
+                    # Increase verbosity for troubleshooting
+                    response.raise_for_status()
+            except Exception as e:
+                self.speak('''Error! Failed to share the self-signed Root CA certificate
+                            for the Summarization micro-service.''')
+                self.log.exception('Unable to share the self-signed Root CA certificate \
+                                   due to an exception -\n{}'.format(
+                    e
+                ))
+        # Upload new setting values to the Selene Web UI. If this is the first run, then upload the settings
+        # after 60 seconds because skill registration to the Selene web UI takes time.
+        if self.first_run:
+            self.schedule_event(handler=self.upload_settings, when=60, name='FirstRunUploadNewSettingValues')
+            self.log.info('New setting values will be uploaded after 60 seconds')
+        else:
+            self.upload_settings()
         self.log.debug('on_settings_changed() completed')
 
     @intent_file_handler('summarizer.webpage.intent')
