@@ -334,9 +334,9 @@ class WebpageSummarizer(MycroftSkill):
                     settings_uploader._load_settings_meta_file()
                     settings_uploader._update_settings_meta()
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
-                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][2]['value'] = False
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][2]['value'] = 'false'
                     settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
-                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][5]['value'] = False
+                    settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][5]['value'] = 'false'
                     settings_uploader._issue_api_call()
                     self.log.info('New setting values uploaded successfully \
                                     to the Selene Web UI')
