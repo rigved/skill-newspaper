@@ -24,6 +24,7 @@ import os
 import requests
 import subprocess
 import multiprocessing
+from sys import executable as python_executable
 from daphne.cli import CommandLineInterface
 
 
@@ -71,6 +72,8 @@ class WebpageSummarizer(MycroftSkill):
         # Keep track of when first run things need to be performed
         self.first_run = True
         # Daphne ASGI process settings
+        self.daphne_context = multiprocessing.get_context('fork')
+        self.daphne_context.set_executable(python_executable)
         self.daphne = CommandLineInterface()
         self.daphne_tls = CommandLineInterface()
         self.cwd = os.getcwd()
@@ -425,11 +428,11 @@ class WebpageSummarizer(MycroftSkill):
         :param daphne_cli: A CommandLineInterface instance for the Daphne ASGI application server.
         :param name: The name to assign to the Daphne ASGI application server's system process.
         :param args: The list of arguments to pass to the CommandLineInterface instance's .run() method.
-        :return: A multiprocessing.Process instance for the Daphne ASGI application server.
+        :return: A multiprocessing.Process instance, within the current context, for the Daphne ASGI application server.
         """
         self.log.debug('[{}]: start_daphne() started'.format(self.name))
         os.chdir(self.daphne_path)
-        daphne_process = multiprocessing.Process(
+        daphne_process = self.daphne_context.Process(
             target=daphne_cli.run,
             name=name,
             args=args,
