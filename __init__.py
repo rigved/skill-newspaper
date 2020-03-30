@@ -360,7 +360,7 @@ class WebpageSummarizer(MycroftSkill):
                     settings_uploader._issue_api_call()
                     self.log.info('New setting values uploaded successfully \
                                     to the Selene Web UI')
-                    self.cancel_event(name='FirstRunUploadNewSettingValues')
+                    self.cancel_scheduled_event(name='FirstRunUploadNewSettingValues')
         except Exception as e:
             self.log.exception('Unable to upload settings to the Selene Web UI \
                                 due to an exception -\n{}'.format(
