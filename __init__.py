@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi, is_paired
+from mycroft.audio import wait_while_speaking
 import os
 import time
 import requests
@@ -275,10 +276,14 @@ class WebpageSummarizer(MycroftSkill):
                                 self.speak('''The next web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')))
+                            wait_while_speaking()
                             # Read out the summary of the web page.
-                            self.speak('''And the summary is as follows.
-                                       {}'''.format(
-                                           webpage_data.get('webpage_summary', '')))
+                            self.speak('And the summary is as follows.')
+                            webpage_summary = webpage_data.get('webpage_summary', '')
+                            if webpage_summary != '':
+                                for sentence in webpage_summary.split('. '):
+                                    self.speak(sentence)
+                                    wait_while_speaking()
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                     else:
