@@ -279,11 +279,9 @@ class WebpageSummarizer(MycroftSkill):
                             wait_while_speaking()
                             # Read out the summary of the web page.
                             self.speak('And the summary is as follows.')
-                            webpage_summary = webpage_data.get('webpage_summary', '')
-                            if webpage_summary != '':
-                                for sentence in webpage_summary.split('. '):
-                                    self.speak(sentence)
-                                    wait_while_speaking()
+                            for sentence in webpage_data.get('webpage_summary', '').split('. '):
+                                self.speak(sentence)
+                                wait_while_speaking()
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                     else:
