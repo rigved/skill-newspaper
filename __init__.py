@@ -99,6 +99,14 @@ class WebpageSummarizer(MycroftSkill):
         self.log.debug('on_settings_changed() started')
         # Keep track of whether settings have changed locally
         settings_changed = {'api_token': False, 'root_ca': False}
+        self.log.debug('Reset API Token? {} <{}>'.format(
+            self.settings.get('api_token_reset'),
+            type(self.settings.get('api_token_reset'))
+        ))
+        self.log.debug('Reset Root CA Certificate? {} <{}>'.format(
+            self.settings.get('root_ca_reset'),
+            type(self.settings.get('root_ca_reset'))
+        ))
         if self.settings.get('api_token_reset', True):
             # Generate a new API token to authenticate with the
             # Summarization micro-service.
