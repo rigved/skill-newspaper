@@ -257,6 +257,7 @@ class WebpageSummarizer(MycroftSkill):
                         else:
                             url = response_json.get('next')
                         for webpage_data in response_json.get('results', list()):
+                            wait_while_speaking()
                             # Show the web page title on the Mycroft 1 mouth while
                             # the long summary is being read out aloud.
                             self.enclosure.reset()
@@ -274,12 +275,11 @@ class WebpageSummarizer(MycroftSkill):
                                 self.speak('''The next web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')))
-                            wait_while_speaking()
                             # Read out the summary of the web page.
                             self.speak('And the summary is as follows.')
                             for sentence in webpage_data.get('webpage_summary', '').split('. '):
-                                self.speak(sentence)
                                 wait_while_speaking()
+                                self.speak(sentence)
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                     else:
