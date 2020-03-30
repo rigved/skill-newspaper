@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi, is_paired
-from mycroft.audio import wait_while_speaking
+from mycroft.audio import wait_while_speaking, stop_speaking
 import os
 import time
 import requests
@@ -309,12 +309,11 @@ class WebpageSummarizer(MycroftSkill):
 
     def stop(self):
         """
-        Delete summaries from the micro-service queue which have already been
-        read out aloud. We do not want to re-read any summaries that were read
-        out loud earlier. We need to do this because Mycroft may have been
-        interrupted while it was processing the queue.
+        Stop speaking and delete summaries from the micro-service queue which have already been read out aloud.
+        We need to do this because Mycroft may have been interrupted while it was processing the summary queue.
         """
         self.log.debug('stop() started')
+        stop_speaking()
         self.delete_data_after_reading()
         self.log.debug('stop() completed')
 
