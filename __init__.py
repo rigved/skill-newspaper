@@ -215,14 +215,13 @@ class WebpageSummarizer(MycroftSkill):
                                        due to an exception -\n{}'.format(
                         e
                     ))
-        if settings_changed.get('api_token', False) or settings_changed.get('root_ca', False):
-            # Upload new setting values to the Selene Web UI. If this is the first run, then upload the settings
-            # after 60 seconds because skill registration to the Selene web UI takes time.
-            if self.first_run:
-                self.schedule_event(handler=self.upload_settings, when=60, name='FirstRunUploadNewSettingValues')
-                self.log.info('New setting values will be uploaded after 60 seconds')
-            else:
-                self.upload_settings()
+        # Sync setting values to the Selene Web UI. If this is the first run, then upload the settings
+        # after 60 seconds because skill registration to the Selene web UI takes time.
+        if self.first_run:
+            self.schedule_event(handler=self.upload_settings, when=60, name='FirstRunUploadNewSettingValues')
+            self.log.info('New setting values will be uploaded after 60 seconds')
+        else:
+            self.upload_settings()
         self.log.debug('on_settings_changed() completed')
 
     @intent_file_handler('summarizer.webpage.intent')
