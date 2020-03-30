@@ -282,6 +282,11 @@ class WebpageSummarizer(MycroftSkill):
                                 self.speak(sentence)
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
+                            # Allow the user to stop
+                            should_continue = self.ask_yesno('Should I read the next summary?')
+                            if should_continue != 'yes' or should_continue is None:
+                                pending_pages = False
+                                break
                     else:
                         self.log.error('Unable to fetch summaries')
                         # Increase verbosity for troubleshooting
