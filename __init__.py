@@ -97,8 +97,6 @@ class WebpageSummarizer(MycroftSkill):
         the new certificates.
         """
         self.log.debug('on_settings_changed() started')
-        # Keep track of when first run things need to be performed
-        self.first_run = self.settings.get('__mycroft_skill_firstrun', True)
         # Keep track of whether settings have changed locally
         settings_changed = {'api_token': False, 'root_ca': False}
         if self.settings.get('api_token_reset', True):
