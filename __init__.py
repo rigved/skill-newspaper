@@ -258,7 +258,10 @@ class WebpageSummarizer(MycroftSkill):
                         for webpage_data in response_json.get('results', list()):
                             # Show the web page title on the Mycroft 1 mouth while
                             # the long summary is being read out aloud.
+                            self.enclosure.reset()
                             self.enclosure.mouth_text(webpage_data.get('webpage_title', ''))
+                            time.sleep(10)
+                            self.enclosure.reset()
                             if first_dialog:
                                 self.log.debug('Found summaries to read')
                                 first_dialog = False
@@ -282,15 +285,19 @@ class WebpageSummarizer(MycroftSkill):
                         response.raise_for_status()
             self.delete_data_after_reading()
             # Signal the end of the current queue to the user
-            self.enclosure.mouth_text('No more summaries available.')
-            self.speak('There are no more summaries available.')
             self.enclosure.reset()
+            self.enclosure.mouth_text('No more summaries available.')
+            time.sleep(10)
+            self.enclosure.reset()
+            self.speak('There are no more summaries available.')
             self.log.debug('Finished reading all summaries')
         except Exception as e:
+            self.enclosure.reset()
             self.enclosure.mouth_text('Error')
+            time.sleep(10)
+            self.enclosure.reset()
             self.speak('''There was an error. Is the summarization
                        micro-service working?''')
-            self.enclosure.reset()
             self.log.exception('Unable to work with the Daphne application server(s) \
                                due to an exception -\n{}'.format(
                 e
