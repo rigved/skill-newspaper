@@ -134,8 +134,5 @@ dmypy.json
 # Vim
 *.swp
 
-# Secrets
-secrets/
-
 # Mycroft AI
 settings.json
