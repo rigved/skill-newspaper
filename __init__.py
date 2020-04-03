@@ -22,7 +22,6 @@ from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking, stop_speaking
 import os
-import time
 import requests
 import subprocess
 
@@ -297,24 +296,20 @@ class WebpageSummarizer(MycroftSkill):
         self.log.debug('upload_settings() started')
         try:
             settings_uploader = SettingsMetaUploader(
-                self.summarization_micro_service_path,
+                self.root_dir,
                 self.name
             )
             settings_uploader.api = DeviceApi()
-            if settings_uploader.yaml_path.is_file():
-                settings_uploader._load_settings_meta_file()
-                settings_uploader._update_settings_meta()
-                settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
-                settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][2]['value'] = 'false'
-                settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
-                settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][5]['value'] = 'false'
-                settings_uploader._issue_api_call()
-                self.log.info('New setting values uploaded successfully \
-                                to the Selene Web UI')
-                self.cancel_scheduled_event(name='FirstRunUploadNewSettingValues')
-            else:
-                self.log.error('Unable to sync settings to the Selene Web UI.')
-                self.speak('Unable to sync settings to the Selene Web UI.')
+            settings_uploader._load_settings_meta_file()
+            settings_uploader._update_settings_meta()
+            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
+            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][2]['value'] = 'false'
+            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
+            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][5]['value'] = 'false'
+            settings_uploader._issue_api_call()
+            self.log.info('New setting values uploaded successfully \
+                            to the Selene Web UI')
+            self.cancel_scheduled_event(name='FirstRunUploadNewSettingValues')
         except Exception as e:
             self.log.exception('Unable to sync settings to the Selene Web UI \
                                 due to an exception -\n{}'.format(
