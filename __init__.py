@@ -313,6 +313,9 @@ class WebpageSummarizer(MycroftSkill):
                     self.log.info('New setting values uploaded successfully \
                                     to the Selene Web UI')
                     self.cancel_scheduled_event(name='FirstRunUploadNewSettingValues')
+                else:
+                    self.log.error('The device is not paired. Unable to sync settings to the Selene Web UI.')
+                    self.speak('The device is not paired. Unable to sync settings to the Selene Web UI.')
         except Exception as e:
             self.log.exception('Unable to upload settings to the Selene Web UI \
                                 due to an exception -\n{}'.format(
