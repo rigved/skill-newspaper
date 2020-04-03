@@ -86,7 +86,7 @@ class WebpageSummarizer(MycroftSkill):
             self.settings.get('root_ca_reset'),
             type(self.settings.get('root_ca_reset'))
         ))
-        if self.settings.get('api_token_reset', True):
+        if not self.first_run and self.settings.get('api_token_reset', True):
             # Generate a new API token to authenticate with the
             # Summarization micro-service.
             self.log.info('API token needs to be reset')
@@ -111,7 +111,7 @@ class WebpageSummarizer(MycroftSkill):
                 ))
                 self.speak('''Error! Failed to generate an API token
                             for the Summarization micro-service.''')
-        if self.settings.get('root_ca_reset', True):
+        if not self.first_run and self.settings.get('root_ca_reset', True):
             # Generate self-signed certificates to connect with the Summarization
             # micro-service over an encrypted TLS connection using HTTP/2. The
             # self-signed Root CA certificate is used by remote applications
@@ -149,7 +149,7 @@ class WebpageSummarizer(MycroftSkill):
                 ))
                 self.speak('''Error! Failed to generate self-signed certificates
                             for the Summarization micro-service.''')
-        if self.first_run or settings_changed.get('api_token', False):
+        if self.first_run or settings_changed.get('api_token', True):
             # Update settings to the new API token
             if os.path.isfile(self.api_token_path):
                 with open(self.api_token_path, 'r') as f:
@@ -157,7 +157,7 @@ class WebpageSummarizer(MycroftSkill):
                 self.log.info('New API token loaded successfully')
         # Use this API token for all future communication with the Summarization micro-service
         self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
-        if self.first_run or settings_changed.get('root_ca', False):
+        if self.first_run or settings_changed.get('root_ca', True):
             # Update settings to the new Root CA certificate
             if os.path.isfile(self.root_ca_cert_path):
                 with open(self.root_ca_cert_path, 'r') as f:
