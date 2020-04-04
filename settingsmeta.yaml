@@ -4,13 +4,13 @@ skillMetadata:
     - name: Summarization micro-service
       fields:
         - type: label
-          label: Use this API token to allow other applications to send web page URLs to the Summarization micro-service. If you want to reset this token, simply tick the checkbox below, save, and re-visit this page after a few minutes; a new token will have been auto-generated.
+          label: Use this API token to allow other applications to send web page URLs to the Summarization micro-service.
         - name: api_token
           type: text
           label: API Token
           value:
         - type: label
-          label: Use this Root CA Certificate to allow other applications to connect to the Summarization micro-service over an encrypted connection. Copy the entire certificate into the remote application, including the "-----BEGIN CERTIFICATE-----" and the "-----END CERTIFICATE-----" parts. If you want to reset this certificate, simply tick the checkbox below, save, and re-visit this page after a few minutes; a new certificate will have been auto-generated.
+          label: Use this Root CA Certificate to allow other applications to connect to the Summarization micro-service over an encrypted connection.
         - name: root_ca
           type: text
           label: Root CA Certificate
