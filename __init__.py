@@ -238,27 +238,31 @@ class WebpageSummarizer(MycroftSkill):
                         else:
                             url = response_json.get('next')
                         for webpage_data in response_json.get('results', list()):
-                            wait_while_speaking()
                             if first_dialog:
                                 self.log.debug('Found summaries to read')
                                 first_dialog = False
                                 self.speak_dialog('summarizer.webpage')
+                                wait_while_speaking()
                                 self.speak('''The first web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')))
+                                wait_while_speaking()
                             else:
                                 self.speak('''The next web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')))
+                                wait_while_speaking()
                             # Read out the summary of the web page.
                             self.speak('And the summary is as follows.')
+                            wait_while_speaking()
                             for sentence in webpage_data.get('webpage_summary', '').split('. '):
-                                wait_while_speaking()
                                 self.speak(sentence)
+                                wait_while_speaking()
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                             # Allow the user to stop
                             should_continue = self.ask_yesno('Should I read the next summary?')
+                            wait_while_speaking()
                             if should_continue != 'yes':
                                 pending_pages = False
                                 break
