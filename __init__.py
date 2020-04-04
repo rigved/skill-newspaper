@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi
-from mycroft.audio import stop_speaking
+from mycroft.audio import wait_while_speaking, stop_speaking
 import os
 import requests
 
@@ -44,6 +44,8 @@ class WebpageSummarizer(MycroftSkill):
         self.api_token_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/api.token')
         self.root_ca_cert_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/rootCA.crt')
         self.headers = None
+        # Stop speaking when the user says so
+        self.stop_speaking = False
         # Keep track of which web pages have been summarized out loud and
         # delete those entries from the Summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
@@ -133,6 +135,7 @@ class WebpageSummarizer(MycroftSkill):
         """
         self.log.debug('handle_summarizer_webpage() started')
         try:
+            self.stop_speaking = False
             # API end-point URL keeps changing as we process the data.
             url = self.api_endpoint_webpages
             # API supports pagination. So, determine if more pages need to be
@@ -174,17 +177,22 @@ class WebpageSummarizer(MycroftSkill):
                                 # Read out the summary of the web page.
                                 self.speak('And the summary is as follows.', wait=True)
                                 for sentence in webpage_data.get('webpage_summary', '').split('. '):
+                                    if self.stop_speaking:
+                                        pending_pages = False
+                                        break
+                                    wait_while_speaking()
                                     self.speak(sentence, wait=True)
-                                self.log.debug('Successfully read the summary for {} .'.format(webpage_data.get('url')))
-                                self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
-                                should_continue = self.ask_yesno('Should I read the next summary?')
-                                # Continue in case there's no response or the response is a 'yes'
-                                if should_continue is not None and should_continue != 'yes':
-                                    pending_pages = False
-                                if not pending_pages:
-                                    # Signal the end of the current queue to the user
-                                    self.speak('I have finished reading all the summaries from the queue.', wait=True)
-                                    self.log.debug('Finished reading all summaries.')
+                                if not self.stop_speaking:
+                                    self.log.debug('Successfully read the summary for {} .'.format(webpage_data.get('url')))
+                                    self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
+                                    should_continue = self.ask_yesno('Should I read the next summary?')
+                                    # Continue in case there's no response or the response is a 'yes'
+                                    if should_continue is not None and should_continue != 'yes':
+                                        pending_pages = False
+                                    if not pending_pages:
+                                        # Signal the end of the current queue to the user
+                                        self.speak('I have finished reading all the summaries from the queue.', wait=True)
+                                        self.log.debug('Finished reading all summaries.')
                         else:
                             self.speak('''There are no more summaries to read!
                                        Give me some more web pages and I'll generate summaries out of them.''',
@@ -211,6 +219,7 @@ class WebpageSummarizer(MycroftSkill):
         We need to do this because Mycroft may have been interrupted while it was processing the summary queue.
         """
         self.log.debug('stop() started')
+        self.stop_speaking = True
         stop_speaking()
         self.delete_data_after_reading()
         self.log.debug('stop() completed')
