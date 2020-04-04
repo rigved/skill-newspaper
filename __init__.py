@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi
-from mycroft.audio import wait_while_speaking, stop_speaking
+from mycroft.audio import stop_speaking
 import os
 import requests
 import subprocess
@@ -246,27 +246,22 @@ class WebpageSummarizer(MycroftSkill):
                                 self.log.debug('Found summaries to read')
                                 first_dialog = False
                                 self.speak_dialog('summarizer.webpage', wait=True)
-                                wait_while_speaking()
                                 self.speak('''The first web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')),
                                     wait=True)
                             else:
-                                wait_while_speaking()
                                 self.speak('''The next web page title is
                                            {}'''.format(
                                                webpage_data.get('webpage_title', '')),
                                     wait=True)
                             # Read out the summary of the web page.
-                            wait_while_speaking()
                             self.speak('And the summary is as follows.', wait=True)
                             for sentence in webpage_data.get('webpage_summary', '').split('. '):
-                                wait_while_speaking()
                                 self.speak(sentence, wait=True)
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                             # Allow the user to stop
-                            wait_while_speaking()
                             should_continue = self.ask_yesno('Should I read the next summary?')
                             if should_continue != 'yes':
                                 pending_pages = False
