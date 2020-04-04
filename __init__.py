@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.skills.settings import SettingsMetaUploader
 from mycroft.api import DeviceApi
-from mycroft.audio import wait_while_speaking, stop_speaking
+from mycroft.audio import wait_while_speaking
 import os
 import requests
 
@@ -189,11 +189,15 @@ class WebpageSummarizer(MycroftSkill):
                                     should_continue = self.ask_yesno('Should I read the next summary?')
                                     # Continue in case there's no response or the response is a 'yes'
                                     if should_continue is not None and should_continue != 'yes':
+                                        self.acknowledge()
                                         pending_pages = False
+                                        self.stop_speaking = True
                                     if not pending_pages:
                                         # Signal the end of the current queue to the user
                                         self.speak('I have finished reading all the summaries from the queue.', wait=True)
                                         self.log.debug('Finished reading all summaries.')
+                                else:
+                                    break
                         else:
                             self.speak('''There are no more summaries to read!
                                        Give me some more web pages and I'll generate summaries out of them.''',
@@ -221,7 +225,6 @@ class WebpageSummarizer(MycroftSkill):
         """
         self.log.debug('stop() started')
         self.stop_speaking = True
-        stop_speaking()
         self.delete_data_after_reading()
         self.log.debug('stop() completed')
 
