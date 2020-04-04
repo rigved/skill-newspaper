@@ -44,12 +44,10 @@ class WebpageSummarizer(MycroftSkill):
         self.summarization_micro_service_path = os.path.abspath('/opt/webpage_summarizer_service')
         self.api_token_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/api.token')
         self.root_ca_cert_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/rootCA.crt')
-        self.headers = {}
+        self.headers = None
         # Keep track of which web pages have been summarized out loud and
         # delete those entries from the Summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
-        # Keep track of when first run things need to be performed
-        self.first_run = True
         self.log.debug('__init__() completed')
 
     def initialize(self):
@@ -60,11 +58,6 @@ class WebpageSummarizer(MycroftSkill):
         self.log.debug('initialize() started')
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
-        # Inform the user when the installation completes
-        if self.first_run:
-            self.first_run = False
-            self.speak('The Mycroft AI Webpage Summarization skill has been successfully setup!', wait=True)
-            self.log.info('Skill first run completed')
         self.log.debug('initialize() completed')
 
     def on_settings_changed(self):
@@ -75,92 +68,19 @@ class WebpageSummarizer(MycroftSkill):
         the new certificates.
         """
         self.log.debug('on_settings_changed() started')
-        # Keep track of whether settings have changed locally
-        settings_changed = {'api_token': False, 'root_ca': False}
-        self.log.debug('Reset API Token? {} <{}>'.format(
-            self.settings.get('api_token_reset'),
-            type(self.settings.get('api_token_reset'))
-        ))
-        self.log.debug('Reset Root CA Certificate? {} <{}>'.format(
-            self.settings.get('root_ca_reset'),
-            type(self.settings.get('root_ca_reset'))
-        ))
-        if not self.first_run and self.settings.get('api_token_reset', True):
-            # Generate a new API token to authenticate with the
-            # Summarization micro-service.
-            self.log.info('API token needs to be reset')
-            result = subprocess.run([
-                os.path.join(
-                    self.summarization_micro_service_path,
-                    'scripts/update_password_and_token.sh'
-                )],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode == 0:
-                self.log.info('New API token generated successfully')
-                self.settings['api_token_reset'] = False
-                settings_changed['api_token'] = True
-            else:
-                self.log.error('Unable to generate API token \
-                    because subprocess returned error code {} \
-                    with error message "{}"'.format(
-                    result.returncode,
-                    result.stderr
-                ))
-                self.speak('''Error! Failed to generate an API token
-                            for the Summarization micro-service.''',
-                           wait=True)
-        if not self.first_run and self.settings.get('root_ca_reset', True):
-            # Generate self-signed certificates to connect with the Summarization
-            # micro-service over an encrypted TLS connection using HTTP/2. The
-            # self-signed Root CA certificate is used by remote applications
-            # to verify the authenticity of the self-signed certificate
-            # used by the Summarization micro-service application server.
-            self.log.info('Self-signed certificates need be to (re-)generated')
-            result = subprocess.run([os.path.join(
-                    self.summarization_micro_service_path,
-                    'scripts/update_certificates.sh'
-                )],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode == 0:
-                self.log.info('New certificates generated successfully')
-                self.settings['root_ca_reset'] = False
-                settings_changed['root_ca'] = True
-                # Restart the Daphne ASGI application servers using the new certificates
-                self.log.info('Restarting Daphne ASGI application servers')
-                try:
-                    self.restart_daphne()
-                except Exception as e:
-                    self.speak('''Error! The Summarization and Pastebin micro-services failed to
-                               start.''',
-                               wait=True)
-                    self.log.exception('Daphne failed to start \
-                                       due to an exception -\n{}'.format(
-                        e
-                    ))
-            else:
-                self.log.error('Unable to generate self-signed certificates \
-                               because subprocess returned error code {}\
-                               with error message "{}"'.format(
-                    result.returncode,
-                    result.stderr
-                ))
-                self.speak('''Error! Failed to generate self-signed certificates
-                            for the Summarization micro-service.''',
-                           wait=True)
-        if self.first_run or settings_changed.get('api_token', True):
-            # Update settings to the new API token
+        # Check if setting values are loaded
+        if self.headers is None:
+            # Load the API token
             if os.path.isfile(self.api_token_path):
                 with open(self.api_token_path, 'r') as f:
                     self.settings['api_token'] = f.read().strip()
-                self.log.info('New API token loaded successfully')
-        # Use this API token for all future communication with the Summarization micro-service
-        self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
-        if self.first_run or settings_changed.get('root_ca', True):
-            # Update settings to the new Root CA certificate
+                # Use this API token for all future communication with the Summarization micro-service
+                self.headers = {'Authorization': 'Token {}'.format(self.settings.get('api_token'))}
+                self.log.debug('API token loaded successfully.')
+            else:
+                self.log.error('API token doesn\'t exist! Generate an API token before using this skill.')
+                return
+            # Load the Root CA certificate
             if os.path.isfile(self.root_ca_cert_path):
                 with open(self.root_ca_cert_path, 'r') as f:
                     root_ca = f.read().strip()
@@ -172,10 +92,10 @@ class WebpageSummarizer(MycroftSkill):
                         data={'paste_data': root_ca}
                     )
                     if response.ok:
-                        self.log.info('New Root CA certificate successfully added to pastebin')
+                        self.log.debug('New Root CA certificate successfully added to pastebin.')
                         paste_id = response.json().get('url').split('/')[-2]
                         self.settings['root_ca'] = self.api_endpoint_pastebin_read_only + paste_id + '/'
-                        self.log.info('New Root CA loaded successfully')
+                        self.log.debug('New Root CA loaded successfully.')
                         # Delete the previously generated Root CA certificate, if any
                         if int(paste_id) > 1:
                             response = requests.delete(
@@ -183,31 +103,26 @@ class WebpageSummarizer(MycroftSkill):
                                 headers=self.headers,
                                 verify=self.root_ca_cert_path)
                             if response.ok:
-                                self.log.info('Old Root CA certificate deleted successfully')
+                                self.log.debug('Old Root CA certificate deleted successfully.')
                             else:
-                                self.log.error('Unable to delete the old Root CA certificate')
-                                # Increase verbosity for troubleshooting
-                                response.raise_for_status()
+                                self.log.error('Unable to delete the old Root CA certificate!')
                     else:
-                        self.log.error('Unable to add the new Root CA certificate \
-                                       to the pastebin')
-                        # Increase verbosity for troubleshooting
-                        response.raise_for_status()
+                        self.log.error('''Unable to add the Root CA certificate to the pastebin!
+                                        A working Pastebin micro-service is required before using this skill.''')
+                        return
                 except Exception as e:
-                    self.speak('''Error! Failed to share the self-signed Root CA certificate
-                                for the Summarization micro-service.''',
-                               wait=True)
                     self.log.exception('Unable to share the self-signed Root CA certificate \
                                        due to an exception -\n{}'.format(
                         e
                     ))
-        # Sync setting values to the Selene Web UI. If this is the first run, then upload the settings
-        # after 60 seconds because skill registration to the Selene web UI takes time.
-        if self.first_run:
-            self.schedule_event(handler=self.upload_settings, when=60, name='FirstRunUploadNewSettingValues')
-            self.log.info('New setting values will be uploaded after 60 seconds')
-        else:
-            self.upload_settings()
+            else:
+                self.log.error('''Root CA Certificate doesn\'t exist!
+                               Generate a Root CA certificate before using this skill.''')
+                return
+        # Sync setting values to the Selene Web UI after 60 seconds
+        # because settings are loaded after skill initialization has been completed.
+        self.schedule_event(handler=self.upload_settings, when=60, name='Sync Settings')
+        self.log.debug('Setting values will be synced after 60 seconds.')
         self.log.debug('on_settings_changed() completed')
 
     @intent_file_handler('summarizer.webpage.intent')
@@ -241,43 +156,46 @@ class WebpageSummarizer(MycroftSkill):
                             self.log.debug('Found last page of summaries to read')
                         else:
                             url = response_json.get('next')
-                        for webpage_data in response_json.get('results', list()):
-                            if first_dialog:
+                        # Read pending summaries
+                        if len(response_json.get('results', list())) > 0:
+                            for webpage_data in response_json.get('results'):
                                 self.log.debug('Found summaries to read')
-                                first_dialog = False
-                                self.speak_dialog('summarizer.webpage', wait=True)
-                                self.speak('''The first web page title is
-                                           {}'''.format(
-                                               webpage_data.get('webpage_title', '')),
-                                    wait=True)
-                            else:
-                                self.speak('''The next web page title is
-                                           {}'''.format(
-                                               webpage_data.get('webpage_title', '')),
-                                    wait=True)
-                            # Read out the summary of the web page.
-                            self.speak('And the summary is as follows.', wait=True)
-                            for sentence in webpage_data.get('webpage_summary', '').split('. '):
-                                self.speak(sentence, wait=True)
-                            self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
-                            self.log.debug('Successfully read a summary')
-                            # Allow the user to stop
-                            should_continue = self.ask_yesno('Should I read the next summary?')
-                            if should_continue != 'yes':
-                                pending_pages = False
-                                break
+                                if first_dialog:
+                                    first_dialog = False
+                                    self.speak_dialog('summarizer.webpage', wait=True)
+                                    self.speak('''The first web page title is
+                                               {}'''.format(
+                                                   webpage_data.get('webpage_title', '')),
+                                        wait=True)
+                                else:
+                                    self.speak('''The next web page title is
+                                               {}'''.format(
+                                                   webpage_data.get('webpage_title', '')),
+                                        wait=True)
+                                # Read out the summary of the web page.
+                                self.speak('And the summary is as follows.', wait=True)
+                                for sentence in webpage_data.get('webpage_summary', '').split('. '):
+                                    self.speak(sentence, wait=True)
+                                self.log.debug('Successfully read the summary for {} .'.format(webpage_data.get('url')))
+                                self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
+                                if not pending_pages:
+                                    # Signal the end of the current queue to the user
+                                    self.speak('I have finished reading all the summaries from the queue.', wait=True)
+                                    self.log.debug('Finished reading all summaries.')
+                        else:
+                            self.speak('''There are no more summaries to read!
+                                       Give me some more web pages and I'll generate summaries out of them.''',
+                                       wait=True)
+                            self.log.debug('There are no pending summaries.')
                     else:
                         self.log.error('Unable to fetch summaries')
-                        # Increase verbosity for troubleshooting
-                        response.raise_for_status()
+                        return
+                else:
+                    self.log.error('''Root CA Certificate doesn\'t exist!
+                                   Generate a Root CA certificate before using this skill.''')
+                    return
             self.delete_data_after_reading()
-            # Signal the end of the current queue to the user
-            self.speak('There are no more summaries available.', wait=True)
-            self.log.debug('Finished reading all summaries')
         except Exception as e:
-            self.speak('''There was an error. Is the summarization
-                       micro-service working?''',
-                       wait=True)
             self.log.exception('Unable to work with the Daphne application server(s) \
                                due to an exception -\n{}'.format(
                 e
@@ -308,13 +226,10 @@ class WebpageSummarizer(MycroftSkill):
             settings_uploader._load_settings_meta_file()
             settings_uploader._update_settings_meta()
             settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][1]['value'] = self.settings.get('api_token', '')
-            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][2]['value'] = 'false'
-            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][4]['value'] = self.settings.get('root_ca', '')
-            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][5]['value'] = 'false'
+            settings_uploader.settings_meta['skillMetadata']['sections'][0]['fields'][3]['value'] = self.settings.get('root_ca', '')
             settings_uploader._issue_api_call()
-            self.log.info('New setting values uploaded successfully \
-                            to the Selene Web UI')
-            self.cancel_scheduled_event(name='FirstRunUploadNewSettingValues')
+            self.log.debug('Setting values successfully synced to the Selene Web UI.')
+            self.cancel_scheduled_event(name='Sync Settings')
         except Exception as e:
             self.log.exception('Unable to sync settings to the Selene Web UI \
                                 due to an exception -\n{}'.format(
@@ -348,41 +263,14 @@ class WebpageSummarizer(MycroftSkill):
                                     for the URL: {}'''.format(
                         url
                     ))
-                    # Increase verbosity for troubleshooting
-                    response.raise_for_status()
-            self.log.info('Cleared all archived summaries from queue')
+                    return
+            self.log.debug('Cleared all archived summaries from queue')
         except Exception as e:
             self.log.exception('Unable to clear the queue of archived summaries \
                                due to an exception -\n{}'.format(
                 e
             ))
         self.log.debug('delete_data_after_reading() completed')
-
-    def restart_daphne(self):
-        """
-        Restart the two Daphne ASGI application servers in the background,
-        one over HTTP and another over HTTPS using HTTP/2.
-        """
-        self.log.debug('restart_daphne() started')
-        # Restart the Daphne ASGI application server over HTTP
-        subprocess.Popen([
-            os.path.join(
-                '/usr/bin/sudo',
-                '/bin/systemctl',
-                'restart',
-                'pastebin_read_only.service'
-            )
-        ])
-        # Restart the Daphne ASGI application server over HTTPS using HTTP/2
-        subprocess.Popen([
-            os.path.join(
-                '/usr/bin/sudo',
-                '/bin/systemctl',
-                'restart',
-                'webpage_summarizer_and_pastebin.service'
-            )
-        ])
-        self.log.debug('restart_daphne() completed')
 
 
 def create_skill():

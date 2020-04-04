@@ -9,17 +9,9 @@ skillMetadata:
           type: text
           label: API Token
           value:
-        - name: api_token_reset
-          type: checkbox
-          label: Reset API token?
-          value: "true"
         - type: label
           label: Use this Root CA Certificate to allow other applications to connect to the Summarization micro-service over an encrypted connection. Copy the entire certificate into the remote application, including the "-----BEGIN CERTIFICATE-----" and the "-----END CERTIFICATE-----" parts. If you want to reset this certificate, simply tick the checkbox below, save, and re-visit this page after a few minutes; a new certificate will have been auto-generated.
         - name: root_ca
           type: text
           label: Root CA Certificate
           value:
-        - name: root_ca_reset
-          type: checkbox
-          label: Reset Root CA certificate?
-          value: "true"
