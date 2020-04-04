@@ -63,7 +63,7 @@ class WebpageSummarizer(MycroftSkill):
         # Inform the user when the installation completes
         if self.first_run:
             self.first_run = False
-            self.speak('The Mycroft AI Webpage Summarization skill has been successfully setup!')
+            self.speak('The Mycroft AI Webpage Summarization skill has been successfully setup!', wait=True)
             self.log.info('Skill first run completed')
         self.log.debug('initialize() completed')
 
@@ -109,7 +109,8 @@ class WebpageSummarizer(MycroftSkill):
                     result.stderr
                 ))
                 self.speak('''Error! Failed to generate an API token
-                            for the Summarization micro-service.''')
+                            for the Summarization micro-service.''',
+                           wait=True)
         if not self.first_run and self.settings.get('root_ca_reset', True):
             # Generate self-signed certificates to connect with the Summarization
             # micro-service over an encrypted TLS connection using HTTP/2. The
@@ -134,7 +135,8 @@ class WebpageSummarizer(MycroftSkill):
                     self.restart_daphne()
                 except Exception as e:
                     self.speak('''Error! The Summarization and Pastebin micro-services failed to
-                               start.''')
+                               start.''',
+                               wait=True)
                     self.log.exception('Daphne failed to start \
                                        due to an exception -\n{}'.format(
                         e
@@ -147,7 +149,8 @@ class WebpageSummarizer(MycroftSkill):
                     result.stderr
                 ))
                 self.speak('''Error! Failed to generate self-signed certificates
-                            for the Summarization micro-service.''')
+                            for the Summarization micro-service.''',
+                           wait=True)
         if self.first_run or settings_changed.get('api_token', True):
             # Update settings to the new API token
             if os.path.isfile(self.api_token_path):
@@ -192,7 +195,8 @@ class WebpageSummarizer(MycroftSkill):
                         response.raise_for_status()
                 except Exception as e:
                     self.speak('''Error! Failed to share the self-signed Root CA certificate
-                                for the Summarization micro-service.''')
+                                for the Summarization micro-service.''',
+                               wait=True)
                     self.log.exception('Unable to share the self-signed Root CA certificate \
                                        due to an exception -\n{}'.format(
                         e
@@ -241,28 +245,29 @@ class WebpageSummarizer(MycroftSkill):
                             if first_dialog:
                                 self.log.debug('Found summaries to read')
                                 first_dialog = False
-                                self.speak_dialog('summarizer.webpage')
+                                self.speak_dialog('summarizer.webpage', wait=True)
                                 wait_while_speaking()
                                 self.speak('''The first web page title is
                                            {}'''.format(
-                                               webpage_data.get('webpage_title', '')))
-                                wait_while_speaking()
+                                               webpage_data.get('webpage_title', '')),
+                                    wait=True)
                             else:
+                                wait_while_speaking()
                                 self.speak('''The next web page title is
                                            {}'''.format(
-                                               webpage_data.get('webpage_title', '')))
-                                wait_while_speaking()
+                                               webpage_data.get('webpage_title', '')),
+                                    wait=True)
                             # Read out the summary of the web page.
-                            self.speak('And the summary is as follows.')
                             wait_while_speaking()
+                            self.speak('And the summary is as follows.', wait=True)
                             for sentence in webpage_data.get('webpage_summary', '').split('. '):
-                                self.speak(sentence)
                                 wait_while_speaking()
+                                self.speak(sentence, wait=True)
                             self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                             self.log.debug('Successfully read a summary')
                             # Allow the user to stop
-                            should_continue = self.ask_yesno('Should I read the next summary?')
                             wait_while_speaking()
+                            should_continue = self.ask_yesno('Should I read the next summary?')
                             if should_continue != 'yes':
                                 pending_pages = False
                                 break
@@ -272,11 +277,12 @@ class WebpageSummarizer(MycroftSkill):
                         response.raise_for_status()
             self.delete_data_after_reading()
             # Signal the end of the current queue to the user
-            self.speak('There are no more summaries available.')
+            self.speak('There are no more summaries available.', wait=True)
             self.log.debug('Finished reading all summaries')
         except Exception as e:
             self.speak('''There was an error. Is the summarization
-                       micro-service working?''')
+                       micro-service working?''',
+                       wait=True)
             self.log.exception('Unable to work with the Daphne application server(s) \
                                due to an exception -\n{}'.format(
                 e
