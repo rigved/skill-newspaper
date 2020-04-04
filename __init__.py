@@ -230,6 +230,23 @@ class WebpageSummarizer(MycroftSkill):
         self.delete_data_after_reading()
         self.log.debug('stop() completed')
 
+    def get_intro_message(self):
+        """
+        Provide post-install instructions to the user.
+        :return: Post-install message that will be read out loud.
+        """
+        self.log.debug('get_intro_message() started')
+        message = '''Visit the Mycroft AI Skills page for the Webpage Summarization Skill
+                    to save the API Token and the SSL Certificate. You will need these two settings
+                    to allow other applications to send web pages to me over a secure channel.
+                    Then, you can ask me to read out the summaries of these web pages by saying:
+                    Hey Mycroft, read web page summary.
+                    Or hey Mycroft, read web page summaries.
+                    Or hey Mycroft, read summary.
+                    Or hey Mycroft, read summaries.'''
+        self.log.debug('get_intro_message() completed')
+        return message
+
     def upload_settings(self):
         """
         Upload new setting values to the Selene Web UI.
@@ -266,15 +283,23 @@ class WebpageSummarizer(MycroftSkill):
         try:
             deletion_list = self.webpage_data_to_delete_after_reading.copy()
             for url in deletion_list:
+                response = requests.get(
+                    url,
+                    headers=self.headers,
+                    verify=self.root_ca_cert_path
+                )
+                if response.ok:
+                    webpage_url = response.json().get('webpage_url', '')
                 response = requests.delete(
                     url,
                     headers=self.headers,
-                    verify=self.root_ca_cert_path)
+                    verify=self.root_ca_cert_path
+                )
                 if response.ok:
                     self.webpage_data_to_delete_after_reading.remove(url)
                     self.log.debug('''Successfully deleted the archived summary \
                                     for the URL: {}'''.format(
-                        url
+                        webpage_url
                     ))
                 else:
                     self.log.error('''Error while deleting the archived summary \
@@ -289,23 +314,6 @@ class WebpageSummarizer(MycroftSkill):
                 e
             ))
         self.log.debug('delete_data_after_reading() completed')
-
-    def get_intro_message(self):
-        """
-        Provide post-install instructions to the user.
-        :return: Post-install message that will be read out loud.
-        """
-        self.log.debug('get_intro_message() started')
-        message = '''Visit the Mycroft AI Skills page for the Webpage Summarization Skill
-                    to save the API Token and the SSL Certificate. You will need these two settings
-                    to allow other applications to send web pages to me over a secure channel.
-                    Then, you can ask me to read out the summaries of these web pages by saying:
-                    Hey Mycroft, read web page summary.
-                    Or hey Mycroft, read web page summaries.
-                    Or hey Mycroft, read summary.
-                    Or hey Mycroft, read summaries.'''
-        self.log.debug('get_intro_message() completed')
-        return message
 
 
 def create_skill():
