@@ -178,6 +178,7 @@ class WebpageSummarizer(MycroftSkill):
                                 self.speak('And the summary is as follows.', wait=True)
                                 for sentence in webpage_data.get('webpage_summary', '').split('. '):
                                     if self.stop_speaking:
+                                        self.acknowledge()
                                         pending_pages = False
                                         break
                                     wait_while_speaking()
