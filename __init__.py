@@ -284,6 +284,23 @@ class WebpageSummarizer(MycroftSkill):
             ))
         self.log.debug('delete_data_after_reading() completed')
 
+    def get_intro_message(self):
+        """
+        Provide post-install instructions to the user.
+        :return: Post-install message that will be read out loud.
+        """
+        self.log.debug('get_intro_message() started')
+        message = '''Visit the Mycroft AI Skills page for the Webpage Summarization Skill
+                    to save the API Token and the SSL Certificate. You will need these two settings
+                    to allow other applications to send web pages to me over a secure channel.
+                    Then, you can ask me to read out the summaries of these web pages by saying:
+                    Hey Mycroft, read web page summary.
+                    Or hey Mycroft, read web page summaries.
+                    Or hey Mycroft, read summary.
+                    Or hey Mycroft, read summaries.'''
+        self.log.debug('get_intro_message() completed')
+        return message
+
 
 def create_skill():
     """
