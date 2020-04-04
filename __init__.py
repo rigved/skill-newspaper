@@ -177,6 +177,10 @@ class WebpageSummarizer(MycroftSkill):
                                     self.speak(sentence, wait=True)
                                 self.log.debug('Successfully read the summary for {} .'.format(webpage_data.get('url')))
                                 self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
+                                should_continue = self.ask_yesno('Should I read the next summary?')
+                                # Continue in case there's no response or the response is a 'yes'
+                                if should_continue is not None and should_continue != 'yes':
+                                    pending_pages = False
                                 if not pending_pages:
                                     # Signal the end of the current queue to the user
                                     self.speak('I have finished reading all the summaries from the queue.', wait=True)
