@@ -23,7 +23,6 @@ from mycroft.api import DeviceApi
 from mycroft.audio import stop_speaking
 import os
 import requests
-import subprocess
 
 
 class WebpageSummarizer(MycroftSkill):

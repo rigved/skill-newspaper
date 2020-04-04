@@ -4,25 +4,17 @@
 #
 # To use this file, uncomment the lines you need, and fill in the appropriate information.
 #
-dependencies:
-  # Pip dependencies on PyPI
-  python:
-    - lxml
-    - mechanicalsoup
-    - pattern
-    - gensim
-    - django
-    - argon2-cffi
-    - djangorestframework
-    - Twisted[tls,http2]
-    - daphne
-    - whitenoise[brotli]
+# dependencies:
+#   # Pip dependencies on PyPI
+#   python:
+#     - requests
+#     - gensim
 #
 #   # Install packages with the system package manager
 #   # This searches for the provided executable and uses the package names
-  system:
-    # For simple packages, this is all that is necessary
-    all: expect gcc gfortran python-dev libopenblas-dev liblapack-dev cython3 python3-numpy python3-scipy libxml2-dev libxslt1-dev python3-cryptography libmysqlclient-dev
+#   system:
+#     # For simple packages, this is all that is necessary
+#     all: pianobar piano-dev
 #
 #     # If the package has a certain name on a different platform:
 #     pkcon: pianobar libpiano-dev  # For the mycroft platform
