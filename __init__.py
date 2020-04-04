@@ -184,7 +184,9 @@ class WebpageSummarizer(MycroftSkill):
                                     wait_while_speaking()
                                     self.speak(sentence, wait=True)
                                 if not self.stop_speaking:
-                                    self.log.debug('Successfully read the summary for {} .'.format(webpage_data.get('url')))
+                                    self.log.debug('Successfully read the summary for {} .'.format(
+                                        webpage_data.get('webpage_url')
+                                    ))
                                     self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
                                     should_continue = self.ask_yesno('Should I read the next summary?')
                                     # Continue in case there's no response or the response is a 'yes'
