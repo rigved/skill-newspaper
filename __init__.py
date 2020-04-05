@@ -44,11 +44,13 @@ class WebpageSummarizer(MycroftSkill):
         self.api_token_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/api.token')
         self.root_ca_cert_path = os.path.join(self.summarization_micro_service_path, 'apiv1/secrets/rootCA.crt')
         self.headers = None
-        # Stop speaking when the user says so
+        # Keep track of when the stop command is issued by the user.
         self.stop_speaking = False
         # Keep track of which web pages have been summarized out loud and
         # delete those entries from the Summarization micro-service queue.
         self.webpage_data_to_delete_after_reading = set()
+        # API supports pagination. So, determine if more pages need to be processed.
+        self.pending_pages = False
         self.log.debug('__init__() completed')
 
     def initialize(self):
@@ -135,84 +137,95 @@ class WebpageSummarizer(MycroftSkill):
         """
         self.log.debug('handle_summarizer_webpage() started')
         try:
-            self.stop_speaking = False
             # API end-point URL keeps changing as we process the data.
             url = self.api_endpoint_webpages
-            # API supports pagination. So, determine if more pages need to be
-            # processed.
-            pending_pages = True
-            # Speak this dialog only for the first summary being read. Gives a
-            # more natural feel to the conversation.
+            # Keep track of when the stop command is issued by the user.
+            self.stop_speaking = False
+            # API supports pagination. So, determine if more pages need to be processed.
+            self.pending_pages = True
+            # Speak this dialog only for the first summary being read. Gives a more natural feel to the conversation.
             first_dialog = True
             # Iterate through the summaries
-            while pending_pages:
-                if os.path.isfile(self.root_ca_cert_path):
-                    response = requests.get(
-                        url,
-                        headers=self.headers,
-                        verify=self.root_ca_cert_path)
-                    if response.ok:
-                        response_json = response.json()
-                        if response_json.get('next', None) is None:
-                            pending_pages = False
-                            self.log.debug('Found last page of summaries to read')
-                        else:
-                            url = response_json.get('next')
-                        # Read pending summaries
-                        if len(response_json.get('results', list())) > 0:
-                            for webpage_data in response_json.get('results'):
-                                self.log.debug('Found summaries to read')
-                                if first_dialog:
-                                    first_dialog = False
-                                    self.speak_dialog('summarizer.webpage', wait=True)
-                                    self.speak('''The first web page title is
-                                               {}'''.format(
-                                                   webpage_data.get('webpage_title', '')),
-                                        wait=True)
-                                else:
-                                    self.speak('''The next web page title is
-                                               {}'''.format(
-                                                   webpage_data.get('webpage_title', '')),
-                                        wait=True)
-                                # Read out the summary of the web page.
-                                self.speak('And the summary is as follows.', wait=True)
-                                for sentence in webpage_data.get('webpage_summary', '').split('. '):
+            while self.pending_pages:
+                if self.stop_speaking:
+                    self.acknowledge()
+                    break
+                else:
+                    if os.path.isfile(self.root_ca_cert_path):
+                        response = requests.get(
+                            url,
+                            headers=self.headers,
+                            verify=self.root_ca_cert_path)
+                        if response.ok:
+                            response_json = response.json()
+                            if response_json.get('next', None) is None:
+                                self.pending_pages = False
+                                self.log.debug('Found last page of summaries to read')
+                            else:
+                                url = response_json.get('next')
+                            # Read pending summaries
+                            if len(response_json.get('results', list())) > 0:
+                                for webpage_data in response_json.get('results'):
                                     if self.stop_speaking:
                                         self.acknowledge()
-                                        pending_pages = False
                                         break
-                                    wait_while_speaking()
-                                    self.speak(sentence, wait=True)
-                                if not self.stop_speaking:
-                                    self.log.debug('Successfully read the summary for {} .'.format(
-                                        webpage_data.get('webpage_url')
-                                    ))
-                                    self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
-                                    should_continue = self.ask_yesno('Should I read the next summary?')
-                                    # Continue in case there's no response or the response is a 'yes'
-                                    if should_continue is not None and should_continue != 'yes':
-                                        self.acknowledge()
-                                        pending_pages = False
-                                        self.stop_speaking = True
-                                    if not pending_pages:
-                                        # Signal the end of the current queue to the user
-                                        self.speak('I have finished reading all the summaries from the queue.', wait=True)
-                                        self.log.debug('Finished reading all summaries.')
-                                else:
-                                    break
+                                    else:
+                                        self.log.debug('Found summaries to read')
+                                        if first_dialog:
+                                            first_dialog = False
+                                            self.speak_dialog('summarizer.webpage', wait=True)
+                                            self.speak('''The first web page title is
+                                                       {}'''.format(
+                                                           webpage_data.get('webpage_title', '')),
+                                                wait=True)
+                                        else:
+                                            self.speak('''The next web page title is
+                                                       {}'''.format(
+                                                           webpage_data.get('webpage_title', '')),
+                                                wait=True)
+                                        # Read out the summary of the web page.
+                                        self.speak('And the summary is as follows.', wait=True)
+                                        for sentence in webpage_data.get('webpage_summary', '').split('. '):
+                                            if self.stop_speaking:
+                                                self.acknowledge()
+                                                break
+                                            else:
+                                                wait_while_speaking()
+                                                self.speak(sentence, wait=True)
+                                        if not self.stop_speaking:
+                                            self.log.debug('Successfully read the summary for {} .'.format(
+                                                webpage_data.get('webpage_url')
+                                            ))
+                                            self.webpage_data_to_delete_after_reading.add(webpage_data.get('url'))
+                                            should_continue = self.ask_yesno('Should I read the next summary?')
+                                            # Continue in case there's no response or the response is a 'yes'
+                                            if should_continue is not None and should_continue != 'yes':
+                                                self.acknowledge()
+                                                self.pending_pages = False
+                                                self.stop_speaking = True
+                                            if not self.pending_pages:
+                                                # Signal the end of the current queue to the user
+                                                self.speak('I have finished reading all the summaries from the queue.', wait=True)
+                                                self.log.debug('Finished reading all summaries.')
+                                        else:
+                                            self.acknowledge()
+                                            break
+                            else:
+                                self.speak('''There are no more summaries to read!
+                                           Give me some more web pages and I'll generate summaries out of them.''',
+                                           wait=True)
+                                self.log.debug('There are no pending summaries.')
                         else:
-                            self.speak('''There are no more summaries to read!
-                                       Give me some more web pages and I'll generate summaries out of them.''',
-                                       wait=True)
-                            self.log.debug('There are no pending summaries.')
+                            self.log.error('Unable to fetch summaries')
+                            return
                     else:
-                        self.log.error('Unable to fetch summaries')
+                        self.log.error('''Root CA Certificate doesn\'t exist!
+                                       Generate a Root CA certificate before using this skill.''')
                         return
-                else:
-                    self.log.error('''Root CA Certificate doesn\'t exist!
-                                   Generate a Root CA certificate before using this skill.''')
-                    return
+            # Perform clean-up before stopping
             self.delete_data_after_reading()
+            self.pending_pages = False
+            self.stop_speaking = True
         except Exception as e:
             self.log.exception('Unable to work with the Daphne application server(s) \
                                due to an exception -\n{}'.format(
@@ -226,6 +239,7 @@ class WebpageSummarizer(MycroftSkill):
         We need to do this because Mycroft may have been interrupted while it was processing the summary queue.
         """
         self.log.debug('stop() started')
+        self.pending_pages = False
         self.stop_speaking = True
         self.delete_data_after_reading()
         self.log.debug('stop() completed')
