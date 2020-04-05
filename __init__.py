@@ -110,8 +110,8 @@ class WebpageSummarizer(MycroftSkill):
                             else:
                                 self.log.error('Unable to delete the old Root CA certificate!')
                     else:
-                        self.log.error('''Unable to add the Root CA certificate to the pastebin!
-                                        A working Pastebin micro-service is required before using this skill.''')
+                        self.log.error('Unable to add the Root CA certificate to the pastebin! \
+                                        A working Pastebin micro-service is required before using this skill.')
                         return
                 except Exception as e:
                     self.log.exception('Unable to share the self-signed Root CA certificate \
@@ -119,8 +119,8 @@ class WebpageSummarizer(MycroftSkill):
                         e
                     ))
             else:
-                self.log.error('''Root CA Certificate doesn\'t exist!
-                               Generate a Root CA certificate before using this skill.''')
+                self.log.error('Root CA Certificate doesn\'t exist! \
+                               Generate a Root CA certificate before using this skill.')
                 return
         # Sync setting values to the Selene Web UI after 60 seconds
         # because settings are loaded after skill initialization has been completed.
@@ -174,13 +174,13 @@ class WebpageSummarizer(MycroftSkill):
                                         if first_dialog:
                                             first_dialog = False
                                             self.speak_dialog('summarizer.webpage', wait=True)
-                                            self.speak('''The first web page title is
-                                                       {}'''.format(
+                                            self.speak('The first web page title is \
+                                                       {}'.format(
                                                            webpage_data.get('webpage_title', '')),
                                                 wait=True)
                                         else:
-                                            self.speak('''The next web page title is
-                                                       {}'''.format(
+                                            self.speak('The next web page title is \
+                                                       {}'.format(
                                                            webpage_data.get('webpage_title', '')),
                                                 wait=True)
                                         # Read out the summary of the web page.
@@ -211,16 +211,16 @@ class WebpageSummarizer(MycroftSkill):
                                             self.acknowledge()
                                             break
                             else:
-                                self.speak('''There are no more summaries to read!
-                                           Give me some more web pages and I'll generate summaries out of them.''',
+                                self.speak('There are no more summaries to read! \
+                                           Give me some more web pages and I\'ll generate summaries out of them.',
                                            wait=True)
                                 self.log.debug('There are no pending summaries.')
                         else:
                             self.log.error('Unable to fetch summaries')
                             return
                     else:
-                        self.log.error('''Root CA Certificate doesn\'t exist!
-                                       Generate a Root CA certificate before using this skill.''')
+                        self.log.error('Root CA Certificate doesn\'t exist! \
+                                       Generate a Root CA certificate before using this skill.')
                         return
             # Perform clean-up before stopping
             self.delete_data_after_reading()
@@ -250,14 +250,18 @@ class WebpageSummarizer(MycroftSkill):
         :return: Post-install message that will be read out loud.
         """
         self.log.debug('get_intro_message() started')
-        message = '''Visit the Mycroft AI Skills page for the Webpage Summarization Skill
-                    to save the API Token and the SSL Certificate. You will need these two settings
-                    to allow other applications to send web pages to me over a secure channel.
-                    Then, you can ask me to read out the summaries of these web pages by saying:
-                    Hey Mycroft, read web page summary.
-                    Or hey Mycroft, read web page summaries.
-                    Or hey Mycroft, read summary.
-                    Or hey Mycroft, read summaries.'''
+        message = 'Hello! Please visit the Mycroft AI Skills page for the Webpage Summarization Skill \
+                    and save the API Token and the SSL Certificate mentioned there. You will need these two settings \
+                    to allow other applications to send web pages to me over a secure channel. \
+                    Then, you can ask me to read out the summaries of these web pages by saying: \
+                    Hey Mycroft, read web page summaries. \
+                    Or hey Mycroft, read summaries. I\'ll repeat these instructions now in case you missed them! \
+                    Please visit the Mycroft AI Skills page for the Webpage Summarization Skill \
+                    and save the API Token and the SSL Certificate mentioned there. You will need these two settings \
+                    to allow other applications to send web pages to me over a secure channel. \
+                    Then, you can ask me to read out the summaries of these web pages by saying: \
+                    Hey Mycroft, read web page summaries. \
+                    Or hey Mycroft, read summaries. All right! That\'s it for now! Bye!'
         self.log.debug('get_intro_message() completed')
         return message
 
@@ -311,13 +315,13 @@ class WebpageSummarizer(MycroftSkill):
                 )
                 if response.ok:
                     self.webpage_data_to_delete_after_reading.remove(url)
-                    self.log.debug('''Successfully deleted the archived summary \
-                                    for the URL: {}'''.format(
+                    self.log.debug('Successfully deleted the archived summary \
+                                    for the URL: {}'.format(
                         webpage_url
                     ))
                 else:
-                    self.log.error('''Error while deleting the archived summary \
-                                    for the URL: {}'''.format(
+                    self.log.error('Error while deleting the archived summary \
+                                    for the URL: {}'.format(
                         url
                     ))
                     return
