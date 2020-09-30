@@ -10,7 +10,7 @@
     * Skill manages summarization micro-service, including its security.
     * Provides API token for remote applications to interact with the
       micro-service.
-* [Web Page Summarization micro-service](https://github.com/rigved/webpage-summarizer-skill/tree/master/apiv1/apiv1/webpages):
+* [Web Page Summarization micro-service](https://github.com/rigved/webpage-summarizer-service/tree/master/src/opt/webpage_summarizer_service/apiv1/apiv1/webpages):
     * Secure summarization micro-service within skill.
     * Provides RESTful APIs to interact with the micro-service.
     * Provides a meta-library to generate a summary of the given web page using extractive summarization techniques.
